@@ -1,86 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>UstaadSearch – Coming Soon</title>
-		<style>
-			body {
-				margin: 0;
-				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-					Arial, sans-serif;
-				background: linear-gradient(135deg, #f9fbff, #eef2ff);
-				color: #1a1a1a;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				min-height: 100vh;
-				text-align: center;
-				padding: 20px;
-			}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>UstaadSearch – The Professional Network for Education in Pakistan</title>
+    <meta name="description" content="UstaadSearch is Pakistan's first verified job board and professional network for teachers, tutors, schools, and academies. LinkedIn + Upwork built for education.">
+    <meta name="keywords" content="teachers, education jobs, pakistan, tutors, schools, academies, job board, professional network">
+    <meta name="author" content="UstaadSearch">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ustaadsearch.com/">
+    <meta property="og:title" content="UstaadSearch – Connecting Educators & Institutes">
+    <meta property="og:description" content="Join the waitlist for Pakistan's premier education platform. Find verified teaching jobs or hire top talent.">
+    <meta property="og:image" content="https://ustaadsearch.com/og-image.jpg">
 
-			.container {
-				max-width: 500px;
-				padding: 40px 30px;
-				background: #ffffff;
-				border-radius: 20px;
-				box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-			}
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://ustaadsearch.com/">
+    <meta property="twitter:title" content="UstaadSearch – Connecting Educators & Institutes">
+    <meta property="twitter:description" content="Join the waitlist for Pakistan's premier education platform. Find verified teaching jobs or hire top talent.">
+    <meta property="twitter:image" content="https://ustaadsearch.com/og-image.jpg">
 
-			.logo {
-				font-size: 48px;
-				font-weight: 700;
-				color: #4a3aff;
-				margin-bottom: 10px;
-			}
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "UstaadSearch",
+      "url": "https://ustaadsearch.com",
+      "logo": "https://ustaadsearch.com/logo.png",
+      "description": "Professional network and job board for the education sector in Pakistan.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "PK"
+      }
+    }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container nav">
+            <a href="#" class="logo">
+                Ustaad<span>Search</span>
+            </a>
+            <a href="#waitlist" class="btn btn-primary">Join Waitlist</a>
+        </div>
+    </header>
 
-			h1 {
-				font-size: 28px;
-				margin-bottom: 10px;
-				font-weight: 700;
-			}
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-content">
+                <span class="hero-tag">🚀 Launching 2026</span>
+                <h1>Pakistan's First Professional Network<br>for Education</h1>
+                <p class="hero-subtitle">
+                    We're building the <strong>"LinkedIn + Upwork"</strong> for teachers, tutors, schools, and academies. 
+                    A verified platform to find jobs, hire talent, and grow your career.
+                </p>
+                <div class="cta-group">
+                    <a href="#waitlist" class="btn btn-primary">Get Early Access</a>
+                    <a href="#features" class="btn btn-secondary">Learn More</a>
+                </div>
+            </div>
+        </section>
 
-			p {
-				font-size: 16px;
-				color: #444;
-				margin-bottom: 25px;
-				line-height: 1.6;
-			}
+        <!-- Features Section -->
+        <section id="features" class="section features">
+            <div class="container">
+                <div class="features-grid">
+                    <!-- For Teachers -->
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍🏫</div>
+                        <h3 class="feature-title">For Teachers & Tutors</h3>
+                        <p>Build your verified professional profile. Apply to top schools and academies with one click. Find private tuition gigs securely.</p>
+                    </div>
+                    
+                    <!-- For Institutes -->
+                    <div class="feature-card">
+                        <div class="feature-icon">🏫</div>
+                        <h3 class="feature-title">For Schools & Academies</h3>
+                        <p>Post jobs and hire verified educators. Manage recruitment effortlessly and find the perfect match for your institute's culture.</p>
+                    </div>
 
-			.tag {
-				display: inline-block;
-				font-size: 12px;
-				background: #4a3aff;
-				color: white;
-				padding: 6px 14px;
-				border-radius: 20px;
-				margin-bottom: 20px;
-			}
+                    <!-- Verified Network -->
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <h3 class="feature-title">Verified Trust</h3>
+                        <p>Say goodbye to fake profiles. Our verification system ensures that every teacher and institute is authentic and trustworthy.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-			.footer {
-				margin-top: 25px;
-				font-size: 13px;
-				color: #777;
-			}
-		</style>
-	</head>
-	<body>
-		<div class="container">
-			<div class="logo">US</div>
+        <!-- Waitlist Section -->
+        <section id="waitlist" class="container">
+            <div class="waitlist">
+                <h2>Be the First to Know</h2>
+                <p>We are launching soon. Join the waitlist to get exclusive early access and updates.</p>
+                <form class="waitlist-form">
+                    <input type="email" class="waitlist-input" placeholder="Enter your email address" required>
+                    <button type="submit" class="btn-submit">Join Waitlist</button>
+                </form>
+            </div>
+        </section>
+    </main>
 
-			<div class="tag">Pakistan-first education job board</div>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="#">About Us</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms</a>
+            </div>
+            <p>&copy; 2025 UstaadSearch. All rights reserved.</p>
+        </div>
+    </footer>
 
-			<h1>UstaadSearch is coming soon</h1>
-
-			<p>
-				We are building Pakistan’s first verified job board for teachers,
-				tutors, schools and academies. A platform like LinkedIn + Upwork — but
-				built for education.
-			</p>
-
-			<p><strong>Launching before 2026. Stay tuned! 🚀</strong></p>
-
-			<div class="footer">© 2025 UstaadSearch. All rights reserved.</div>
-		</div>
-	</body>
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
 </html>
