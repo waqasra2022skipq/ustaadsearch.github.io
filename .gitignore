@@ -1,0 +1,7 @@
+# Track only markdown/log files at the top level.
+# The actual source lives in ustaadsearch/ and ustaadsearch-frontend/,
+# each of which is its own separate git repository.
+/*
+!*.md
+!*.log
+!.gitignore
