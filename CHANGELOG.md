@@ -8,6 +8,75 @@ Format: newest entries at the top.
 ## [Unreleased]
 
 ### Added
+- **Nightly "recommended teachers" email for newly posted jobs** — almost every job on the
+  platform right now is operator-seeded external mode, meaning the poster has no account and
+  no dashboard, so the recommended-teachers panel (a pull surface) never reaches them. New
+  `jobs:send-recommendation-emails` (backend) finds job posts published in the last 24 hours,
+  computes each one's existing `JobPostService::recommendedTeachersForJob()` shortlist
+  unchanged, and emails it to whoever posted the job — one email per **normalized recipient
+  address** (`Str::lower(trim($email))`) per run, not per job or per institution, because
+  `institution_id` is `null` on every external job and the same school can post one managed
+  job and one external job, or the same `external_email` twice with different casing, and all
+  of those must collapse to one send. Runs `dailyAt('04:00')` (09:00 PKT — after the
+  02:00/02:30/03:00 embed-all commands, at the start of a Pakistani school/office day),
+  scheduled in `routes/console.php`.
+  - **Contact-detail leak was the primary risk.** `recommendedTeacherPayload()` includes
+    teacher `email`, `phone` and `cv_path` — never safe to hand a template. Extracted the
+    masking whitelist `ShortlistPdfService` already had (`teacherViewData()`) into a shared
+    `App\Services\Recommendation\RecommendedTeacherPresenter`, now consumed by both the PDF
+    and the new mail, so there is exactly one place that decides what a teacher record is
+    allowed to leave the platform through — a second copy is how it drifts. The presenter
+    takes a `source` param for the `?src=` profile-link marker (`sl` for the PDF, `rec-email`
+    here) and now also carries `match_score`/`match_reasons` (already non-PII in the payload),
+    which the PDF didn't need but the email does.
+  - **Duplicate protection: new `job_posts.recommendations_emailed_at`**, stamped
+    synchronously at queue time (mirroring `teachers.last_digest_sent_at` in
+    `SendTutorJobsDailyDigest`) and read as `whereNull(...)`. The founder's stated call is that
+    losing a night of coverage is fine — no retry/backfill machinery, a strict 24h window on
+    `published_at`, full stop — but that is a decision about *coverage*, not about *resending*.
+    A re-run to check the template, a re-run after a mid-batch Resend 5xx, or `renewJob()`
+    resetting `published_at` on a renewal, all had to be unable to double-email a recipient.
+    Only jobs actually included in a queued email get stamped; a job skipped for a thin
+    shortlist or an unresolvable address is left unstamped and simply ages out of the 24h
+    window on its own rather than being retried.
+  - **Opt-out: new general-purpose `email_suppressions` table** (keyed on normalized email,
+    with `source`/`reason`) plus a no-login signed `/unsubscribe` route
+    (`UnsubscribeController`) — neither existed anywhere in the app (the n8n outreach
+    workflows suppress against a Google Sheet, not this app). Built general rather than scoped
+    to this one command, since consolidating with the n8n suppression list is an obvious
+    future move and the cost of doing so now is one nullable `source` column; only this
+    command reads it today, so nothing else changes behavior.
+  - **Quality gate over coverage**: a job is skipped (logged, not failed) when its shortlist
+    is empty or when fewer than `search.recommendation_email.min_qualifying_teachers` (default
+    3) teachers clear `min_combined_score` (default 0.55) — and a teacher whose city doesn't
+    match the job's must clear it by a further `cross_city_score_bonus` (default 0.15) to
+    count, which directly targets the thin-pool risk named for the send (a Lahore job
+    returning location-mismatched candidates that would otherwise clear a flat floor). None of
+    this touches `recommendedTeachersForJob()`, the ranking, or `RECOMMENDATION_ALGORITHM_VERSION`
+    — it only decides, after the fact, whether the existing output is good enough to be
+    someone's first impression of the platform. Also logs (does not skip) when a shortlist was
+    built on the structural-only fallback (`EmbeddingProfile`-driven, all `semantic_score`
+    null), so a quality complaint traces back to a missing embedding rather than staying a
+    mystery.
+  - **Recipient framing is honest, not just compliant**: the email states plainly near the top
+    that the job is listed on UstaadSearch and explains it may have been imported from a
+    public posting when any job in the group is external-mode, with the unsubscribe link
+    always in the footer regardless of mode. Per-job CTA differs by mode — managed jobs deep
+    link to `.../applications#recommended-teachers` (the real conversion path, tracked via
+    `invitations.viewed_at`/`applied_at`); external jobs get no invented "claim your listing"
+    link (no claim flow exists in the app) and instead point to a reply-to-this-email
+    (`support@ustaadsearch.com` already runs the manual concierge loop) plus the public
+    teacher profile and job page. No invite buttons for external recipients and no attached
+    PDF — both explicitly out of scope; invitations are institution-initiated from an
+    authenticated panel, and the PDF carries an operator-supplied note this automated send has
+    no equivalent for.
+  - Ships with a plain-text mail part (`emails.job-recommendations-text.blade.php`) — a first
+    for this codebase (all 7 existing mailables are HTML-only) — since these recipients are
+    non-technical school admin addresses on basic hosting, where an HTML-only send is a
+    deliverability risk the existing sends haven't had to worry about.
+  - `--max-emails` (default `search.recommendation_email.max_emails`, 50 — shares the Resend
+    allowance with the 70/day tutor-jobs digest) and `--dry-run` (reports groups, recipients
+    and per-job shortlist sizes without sending or stamping anything).
 - **Similar tutor jobs on the tutor job detail page** — `GET /api/tutor-jobs/{slug}/related`
   and `TutorJobService::getRelatedTutorJobs()` (via `SimilarityService::similarTutorJobs()`)
   shipped with semantic tutor job search, but nothing on the frontend called it, so tutor
