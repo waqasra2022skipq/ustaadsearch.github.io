@@ -7,6 +7,16 @@ Format: newest entries at the top.
 
 ## [Unreleased]
 
+### Changed
+- **Public job cards show view count instead of proposal count** — the listing card
+  (`JobCard.tsx`) previously always displayed "Proposals: ..."; it now shows "Views: N" once a
+  job passes 5 views, and nothing in that spot otherwise. `views_count` already existed on
+  `JobPost` and was already returned on the job detail endpoint, but the shared listing
+  transform (`JobPostController::transformListing()`, used by `/api/jobs`, AI search, and
+  related-jobs) never included it — added it there so all three listing consumers get real
+  view counts. Institution-facing views (dashboard job table, analytics) are unaffected; they
+  never went through this card.
+
 ### Added
 - **Nightly "recommended teachers" email for newly posted jobs** — almost every job on the
   platform right now is operator-seeded external mode, meaning the poster has no account and
