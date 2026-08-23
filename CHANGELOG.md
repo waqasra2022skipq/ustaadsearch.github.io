@@ -5,7 +5,6 @@ Format: newest entries at the top.
 
 ---
 
-## [Unreleased]
 
 ### Changed
 - **Public job cards show view count instead of proposal count** — the listing card
