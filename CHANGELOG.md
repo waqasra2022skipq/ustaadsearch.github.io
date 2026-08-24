@@ -6,6 +6,34 @@ Format: newest entries at the top.
 ---
 
 
+### Fixed
+- **Teacher AI summary jobs no longer storm the Groq rate limit** — production logs showed
+  `GenerateTeacherAiSummaryJob` failing daily with 429s after Groq retired
+  `llama-3.3-70b-versatile` and the app moved to `openai/gpt-oss-120b`, which has a tighter
+  budget. The job had no backoff, so a failed attempt was re-released with zero delay and one
+  429 became a retry storm. Four layers now handle it: the job retries on a spaced backoff
+  (60/180/300/600s) within a 6-hour `retryUntil` window; a proactive `RateLimited('groq-summary')`
+  queue middleware caps dispatch throughput (`GROQ_SUMMARY_RATE_LIMIT_PER_MINUTE`, default 15 —
+  tune to the model's actual budget in the Groq console); `TeacherSummaryAgent` now declares
+  Gemini as a failover provider, so a Groq 429 generates the summary immediately on
+  `gemini-flash-lite-latest` instead of waiting out backoff (a new `LogAiProviderFailover`
+  listener makes each failover visible in the logs); and the job is
+  `ShouldBeUniqueUntilProcessing` keyed by teacher ID, because `TeacherProfileObserver` fires
+  once per saved model — one profile edit saving the Teacher plus several educations and
+  experiences used to queue that many identical summary jobs, each burning a Groq call for
+  the same output.
+- **Retired Gemini text model default replaced** — the Gemini text default was the withdrawn
+  `gemini-2.0-flash` (the API now returns 404 for it); it is now the `gemini-flash-lite-latest`
+  alias, which Google keeps pointed at the current flash-lite release so it cannot rot the
+  same way. Check that production's `GEMINI_MODEL` env var (if set) isn't still pinning a
+  retired model.
+- **Test suite no longer burns production AI quota** — the base `TestCase` now fakes
+  `TeacherSummaryAgent` globally (mirroring the existing `Embeddings::fake()`), because any
+  test creating a Teacher triggered a real Groq call via the observer with the production key
+  from `.env` — flaking the suite whenever quota was spent, and every `composer test` run
+  consumed the same rate budget the production queue needs. The suite is also ~6x faster
+  without the network calls.
+
 ### Changed
 - **Public job cards show view count instead of proposal count** — the listing card
   (`JobCard.tsx`) previously always displayed "Proposals: ..."; it now shows "Views: N" once a
