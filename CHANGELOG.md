@@ -6,6 +6,49 @@ Format: newest entries at the top.
 ---
 
 
+### Added
+- **"Claim this listing" for external job posts.** Roughly 88% of open jobs are operator-seeded
+  external mode with no owning account (`application_mode='external'`, `institution_id` null,
+  poster identity held only in `external_contact_name/email/phone`), and until now that was a
+  dead end — CHANGELOG history for the recommendation-email send explicitly noted "no claim flow
+  exists in the app." Proof of ownership is deliberately narrow: a **verified** `users.email`
+  matching a job's `external_email`, normalized on both sides (`LOWER(TRIM(...))` in SQL rather
+  than PHP, since MySQL's `utf8mb4_unicode_ci` collation is case-insensitive but SQLite — dev and
+  tests — is not, and the two would otherwise silently disagree). Knowledge of the address is
+  never accepted as proof, because `external_email` is already public and unauthenticated on
+  `/api/jobs` and the job detail endpoint — only `email_verified_at` proves control of the inbox.
+  Claiming is all-or-nothing per address: every external job sharing the normalized email
+  transfers together, the same grouping `SendJobRecommendationEmails` already uses and for the
+  same reason (`institution_id` is null on every external job, so email is the only identity that
+  ties them together). New `App\Services\Job\JobClaimService` is the one place the transfer
+  happens — `institution_id` set, `application_mode` flipped to `managed`, and the four
+  `external_*` columns nulled (not cosmetic: `JobPostController::show()` serializes
+  `external_contact` unconditionally, so a claimed job would otherwise keep leaking the school's
+  old contact details) — behind a `DB::transaction` with `lockForUpdate()` and a
+  `whereNull('institution_id')` re-check, so two triggers racing the same job can't double-claim
+  it. A new `job_claims` table (one row per job, `job_post_id` unique) is both the idempotency
+  guard and a reversal snapshot (`previous_contact`) an admin can restore from. Three callers
+  share the service: a new `ClaimExternalJobsOnVerification` listener on Laravel's `Verified`
+  event — the same shape as the existing `ApprovePendingGuestReviews`, which already retroactively
+  binds previously-unowned records to a newly-verified user — auto-claims silently the moment an
+  institution verifies an email that matches; `POST /me/institution/claims`
+  (`App\Http\Controllers\JobClaimController`, its own `job-claim` rate limiter) backs a "Claim
+  this listing" button on `/jobs/[slug]` for institutions that verified before this shipped; and a
+  new `jobs:claim-external` command (`--dry-run`) reconciles the rest, scheduled `dailyAt('03:30')`
+  — deliberately ahead of `jobs:send-recommendation-emails` at 04:00, so a job claimed overnight
+  emails its shortlist to the new owner's dashboard rather than the now-stale external address.
+  The listener wraps the service in try/catch: a claim failure must never turn a successful email
+  verification into a 500. A phone-only external job (`AiJobImport` accepts email *or* phone) is
+  never claimable — `JobPost::isClaimable()` requires an email specifically, and the frontend
+  button only renders when it's set. Claiming does not touch `institutions.verified_at` (admin
+  review) or set it from `is_email_verified` (an email click) — the two are deliberately different
+  signals, per the existing docblock on `Institution`. A queued `ExternalJobsClaimedMail` confirms
+  the transfer once per claiming user, not once per job, and carries a reply-to-dispute line for
+  the residual risk this flow accepts: an operator typo pointing the wrong contact email at an
+  import. Filament's Job Posts table gets a `Claimed By` column, a `Claimed` filter, and an
+  `Unclaim` action that restores the pre-claim state from the snapshot (backend + frontend +
+  Filament)
+
 ### Fixed
 - **Teacher AI summary jobs no longer storm the Groq rate limit** — production logs showed
   `GenerateTeacherAiSummaryJob` failing daily with 429s after Groq retired
