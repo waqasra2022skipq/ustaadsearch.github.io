@@ -6,7 +6,30 @@ Format: newest entries at the top.
 ---
 
 
-### Added
+### Fixed
+- **Follow-up sweep after the copy/trust pass below: two more `0.0`-style rating bugs, one more
+  doubled title, one more false "verified" claim, and an off-by-one.** A second-pass review of the
+  same audit against the resynced repo caught what the first pass missed. `PublicInstitutionClient.tsx`
+  (an institution's own public profile — not just its directory card) rendered
+  `{reviewSummary.average_rating || "0.0"}` unguarded in two places: the profile header badge and
+  the sidebar "Rating Breakdown" widget. Both now use the same `formatPublicRating()` /
+  `PUBLIC_RATING_THRESHOLD` helper already applied to `InstitutionCard` — the header badge (star +
+  score + review count + separator) is omitted entirely below 5 reviews rather than showing a fake
+  "0.0 (0 Reviews)", and the sidebar's "Avg. Rating" tile shows "—" instead of "0.0" (the "Total
+  Reviews" tile and the per-star percentage bars stay as-is since 0 is an honest value there).
+  `institution/dashboard/layout.tsx` had `title: "Institution Dashboard - UstaadSearch"` under the
+  root layout's `"%s | UstaadSearch"` template — the earlier title-doubling sweep only covered
+  public-facing routes and missed this dashboard layout; fixed to a bare title. `tutor-jobs/page.tsx`
+  was only half-fixed the first time: the "Ustaad Search" → "UstaadSearch" spacing typo was
+  corrected, but the underlying doubling (the branded string was still assigned to the top-level
+  `title` field, not just to `openGraph`/`twitter`) was missed — now split into a bare title plus an
+  explicit `socialTitle` for social cards, matching every other route. `/teachers` and `/jobs` still
+  called teacher profiles and job listings "verified" in their metadata description and page copy —
+  same false-verification pattern already fixed on `/institutions` and the homepage, now applied
+  here too (title, both metadata descriptions, OG image alt text, and the page H1's subheading).
+  Also fixed, in the same file already being edited for the rating gate: `InstitutionCard`'s
+  `isHiring` flag required `active_jobs_count > 1`, so an institution with exactly one open role
+  never got the "Hiring" badge — changed to `> 0`.
 - **Privacy Policy, Terms of Service, and About pages; a "For Parents" nav entry.** The site had
   no `/privacy`, `/terms`, or `/about` route and no footer link to any of them — a copy audit
   flagged this as a real gap. `/privacy` and `/terms` are drafted from what the product actually
