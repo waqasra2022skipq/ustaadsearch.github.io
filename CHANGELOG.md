@@ -7,6 +7,96 @@ Format: newest entries at the top.
 
 
 ### Added
+- **Privacy Policy, Terms of Service, and About pages; a "For Parents" nav entry.** The site had
+  no `/privacy`, `/terms`, or `/about` route and no footer link to any of them — a copy audit
+  flagged this as a real gap. `/privacy` and `/terms` are drafted from what the product actually
+  does (S3-hosted CVs/photos, Resend email notifications and digests, WhatsApp used as an
+  off-platform contact channel, Google Analytics, AI-assisted search) rather than boilerplate, and
+  are explicitly marked in-page and in a file header comment as **draft, pending founder/legal
+  review** — they carry bracketed placeholders (retention period, governing jurisdiction) instead
+  of invented specifics. `/about` describes only features already shipped. Footer gets an "About"
+  link and a "Legal" pair (Privacy/Terms) folded into the existing Support column rather than a new
+  grid column, so the 4-column footer layout doesn't break. `SiteHeader`'s Guides dropdown (desktop
+  + mobile) gets a third entry, "For Parents," pointing at the existing `/tutor-jobs` free-posting
+  flow — parents were one of three audiences named on the homepage but had no nav entry naming
+  them.
+
+### Fixed
+- **Guide pages (`/guides/teachers`, `/guides/institutions`) described features that don't exist.**
+  An external copy audit of the live site was verified claim-by-claim against the actual code
+  before anything changed. Confirmed false: a teacher "verification process" with document upload
+  and identity checks (the only verification in the codebase is email verification —
+  `verified_at` on `Teacher`/`Institution` is set exclusively by an admin Filament action, never by
+  the account holder); a "Verified Ustaad" badge (appeared nowhere in `TeacherCard.tsx`, only in
+  the guide copy itself — real badges are "Email Confirmed"/"Email Unconfirmed" plus a dot titled
+  "Identity Verified"); a "proposals" system (the real mechanism is `JobApplication`; `proposals_count`
+  on `job_posts` is a denormalized counter incremented by application create/delete, not a
+  feature); freelance-marketplace vocabulary ("project-based rates" — the `rate_period` enum is
+  `hour/session/week/month`, no "project" option exists; "remote projects," "request reviews after
+  completion"); "thousands of verified teachers" (actual: 1,662 teachers, 8 admin-verified); and
+  "Empowering Educators Globally" / "global network of vetted teachers" on a Pakistan-only product.
+  Both pages are rewritten to describe only shipped behavior, and the institution guide gains a new
+  step for the live "recommended teachers + invite to apply" flow
+  (`RecommendedTeachersPanel`, `recordInvitationAction`), which previously appeared on neither
+  guide despite being the real activation path for institutions. Both pages are also converted from
+  client components to server components with real `generateMetadata` (unique title/description,
+  correct `og:url`, canonical) — as client components they could export no metadata of their own
+  and silently inherited the root layout's. The institution guide's full teal theme is dropped in
+  favor of the site's indigo palette with teal kept as a single accent, so the two guides read as
+  one product instead of two.
+- **Doubled "| UstaadSearch" in page titles, on `/institutions` and 8 other routes.** The root
+  layout's `title.template` is `"%s | UstaadSearch"`; several pages also hardcoded the brand into
+  their own title string, rendering as `"X | UstaadSearch | UstaadSearch"`. Fixed by giving each
+  page a bare `title` (so the template supplies the brand once) and an explicit `${title} |
+  UstaadSearch` string only for `openGraph`/`twitter`, matching the pattern `/jobs/[slug]` already
+  used correctly. Applied to `/institutions`, `/institutions/[username]`,
+  `/institutions/[username]/reviews`, `/teachers`, `/teachers/[username]`, `/jobs`,
+  `/tutor-jobs`, `/tutor-jobs/[slug]`, and `/contact` (the last two also had a stray "Ustaad
+  Search" — missing the brand's internal spacing — normalized to "UstaadSearch"). `jobs/page.tsx`
+  and `teachers/page.tsx` also carried an unrelated "round the world" / "across the world" claim in
+  the same title strings being touched; dropped for the same Pakistan-only reason as the guide
+  pages, since fixing the title required rewriting that exact line anyway.
+- **`/institutions` overstated verification and hid data quality problems.** Page copy and metadata
+  called the directory "verified schools" — only 10 of 68 seeded institutions have `verified_at`
+  set — so "verified" is now dropped from copy/title/description; the per-card emerald dot still
+  correctly gates on the real `verified` flag. Every institution card also unconditionally rendered
+  a `0.0 | 0 Reviews` badge regardless of review count. Added `formatPublicRating()` /
+  `PUBLIC_RATING_THRESHOLD` to `lib/utils.ts`, mirroring the existing `formatPublicProposals()` /
+  `PUBLIC_PROPOSALS_THRESHOLD` pattern used on `/jobs/[slug]`, and gated `InstitutionCard`'s rating
+  block behind it — below 5 reviews it now renders nothing rather than a misleadingly low score.
+  Separately, the "Dedicated to providing quality education." filler shown on ~31 of 68 institutions
+  turned out to be a frontend fallback (`description || "..."`in `InstitutionCard.tsx`), not stored
+  data — confirmed by querying the institutions table directly (zero rows contain that string; 31
+  have a null/empty `description`). Removed the fallback; cards with no real description now omit
+  the About section instead of showing invented copy. Two records have genuine data-quality
+  problems in stored data (not fixed here, per explicit instruction not to bulk-edit records
+  without sign-off): institution id 41 ("The Educators")'s description is Beaconhouse School
+  System's own boilerplate, and id 31 ("Roots IVY International School & College, Faisalabad")'s
+  description is about an unrelated law school's LLB/LLM programs.
+- **Homepage: mislabeled/inconsistently formatted stat, duplicate value-prop section, unverifiable
+  claims, emoji headings, and inconsistent brand spacing.** The hero labeled the tutor-job count
+  "jobs posted" (unformatted, e.g. `1998+`) while the CTA section labeled the identical number
+  "tutor jobs" (comma-formatted, `1,998+`); both now read "tutor jobs posted" and use
+  `toLocaleString("en-PK")`. Two sections said essentially the same thing ("Built for Teachers and
+  Institutions," 2 cards, vs. "Dedicated Solutions for Every User," 3 cards); removed the 2-card
+  version (which also carried the "Hire Verified Teachers" heading) and moved the 3-card version
+  below Featured Opportunities per the requested ordering. Removed "verified teaching jobs
+  worldwide," "pre-screened," and "verified credentials" from the remaining cards (replaced with
+  claims the product can back: Pakistan-scoped jobs, AI-ranked recommendations, real reviews); the
+  H1 and hero badge no longer make an unverifiable "best job-matching site" / "professional network"
+  claim — the hero now branches its headline on the same `currentUser?.role === "institution"`
+  signal `page.tsx` already used for the default search tab, rather than adding new state.
+  "Pakistan's leading education marketplace" / "the leading job board and marketplace" dropped from
+  homepage and root-layout metadata (both now say "free... in Pakistan," which is verifiably true);
+  "The premium marketplace... connecting excellence with opportunity" dropped from the footer.
+  Section-heading emoji (👩‍🏫👨‍🏫 / 👨‍👩‍👧‍👦 / 🏫) removed for consistency with the lucide icons used
+  everywhere else on the page. "Ustaad Search" (missing the brand's internal spacing) in the "How
+  ___ Works" heading and the "Dedicated Solutions" subhead normalized to "UstaadSearch." Featured
+  teacher cards were checked for the reported untruncated-`about`-text bug and found already
+  clamped (`line-clamp-2`) in both `FeaturedOpportunitiesSection` and `TeacherCard` — no change
+  needed there.
+
+### Added
 - **"Claim this listing" for external job posts.** Roughly 88% of open jobs are operator-seeded
   external mode with no owning account (`application_mode='external'`, `institution_id` null,
   poster identity held only in `external_contact_name/email/phone`), and until now that was a
