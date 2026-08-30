@@ -6,6 +6,30 @@ Format: newest entries at the top.
 ---
 
 
+### Changed
+- **Teacher profile pictures removed platform-wide; upload disabled; profile score
+  reweighted.** Vercel's image-optimization quota was getting exhausted by phone-camera profile
+  photos, and teacher photos were never load-bearing (the CV and text profile carry the actual
+  signal). Teachers can no longer upload or update a profile picture — `PATCH
+  /api/me/profile-picture` now 403s for the teacher role (institutions are unaffected and keep
+  the feature in full). Every read path that could expose a teacher's photo now hides it
+  unconditionally, including rows that still hold a URL from before upload was disabled: the
+  public teacher directory and profile pages, job application/shortlist/recommended-teacher
+  payloads, the teacher's own `/api/me` and `/api/me/teacher` responses, and reviews written by a
+  teacher (an institution's review still shows theirs, gated through the new
+  `User::publicAvatarUrl()` helper). The frontend replaces every teacher-facing avatar — search
+  cards, the public profile page, the dashboard sidebar/header, the talent-pool panel, the
+  applicant drawer, and reviews — with a plain colored-initials avatar
+  (`components/ui/InitialsAvatar.tsx`) instead of fetching an image, so there's no network request
+  to optimize in the first place; the `ProfilePictureUpload` dashboard control was removed from
+  the teacher profile form (institutions keep it). `TeacherProfileService::calculateProfileScore`'s
+  10% Profile Picture criterion is gone; a new Mobile Number criterion (10%) was added, CV Upload
+  went from 15% to 20%, and Experience was trimmed from 10% to 5% to keep the total at 100 —
+  `ProfileScoreCard.tsx`'s breakdown was updated to match (it previously nagged every teacher to
+  add a photo they were no longer able to add). Fixed in the same pass: `updateForUser()` recomputed
+  the score from a stale eager-loaded `user` relation, so a phone-number update in the same request
+  wasn't reflected in the new Mobile Number score until the next save.
+
 ### Fixed
 - **Follow-up sweep after the copy/trust pass below: two more `0.0`-style rating bugs, one more
   doubled title, one more false "verified" claim, and an off-by-one.** A second-pass review of the
