@@ -6,6 +6,20 @@ Format: newest entries at the top.
 ---
 
 
+### Fixed
+- **Cache store reverted from Redis to `database`.** The Upstash Redis free tier hit its
+  500K/month command cap (513K commands used against 193KB of the 256MB storage quota — a
+  command-count problem, not a storage one), and cache operations were being rate-limited in
+  production. `CACHE_STORE` reverts to `database`, which was already the framework default in
+  `config/cache.php` (`env('CACHE_STORE', 'database')`) and the documented safe baseline in
+  `.env.example`; the Upstash Redis env vars and the `redis` store config block are left in
+  place, dormant, so re-enabling Upstash later is a one-line env change. Smoke-tested after the
+  flip against the `database` driver: the `contact` rate limiter still returns 429 for a guest
+  on the 6th request within the hour, and `InteractionService::recordView()`'s 24-hour dedup
+  (itself cache-backed) still increments `views_count` exactly once per identity on a repeat
+  view. This cutover is lossless — cache is ephemeral — and reversible by setting
+  `CACHE_STORE=redis` + `php artisan config:clear` on the app server.
+
 ### Changed
 - **Teacher profile pictures removed platform-wide; upload disabled; profile score
   reweighted.** Vercel's image-optimization quota was getting exhausted by phone-camera profile
