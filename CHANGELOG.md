@@ -6,6 +6,35 @@ Format: newest entries at the top.
 ---
 
 
+### Changed
+- **Cut self-inflicted API request volume: slower notification polling, cached homepage
+  widgets.** An nginx log review on the DigitalOcean droplet found the traffic burning through
+  the (now-exhausted) Upstash command quota wasn't a scraper — it was `axios/1.13.2`, i.e. the
+  Next.js server calling its own Laravel API. `NotificationBell.tsx` polled
+  `/api/notifications/unread-count` every 30s via `setInterval`, and since the bell sits in
+  `SiteHeader` (rendered from the root layout for every logged-in-user page view), that timer
+  ran for the entire session on every route. The interval is now a named constant,
+  `UNREAD_COUNT_POLL_INTERVAL_MS = 300000` (5 minutes) — job-match/invitation/status
+  notifications don't need sub-minute latency, and users with web push enabled get real-time
+  delivery regardless. Added a `window.addEventListener("focus", ...)` refetch alongside the
+  existing `visibilitychange` listener, since visibility doesn't reliably fire in every browser
+  when the OS window regains focus without a tab switch — so the badge still updates promptly
+  when someone tabs back in, and the longer interval costs nothing in perceived freshness.
+  Separately, the homepage's three widget calls (`getTeachersAction`, `getTutorJobsAction`,
+  `getTutorJobStatsAction`) were re-fetching Laravel on every single render: they go through the
+  shared axios client, which Next's `fetch()`-based cache/ISR doesn't cover, so there was no
+  caching at any layer despite `TutorJobService::getHomepageStats()` already caching 12h
+  server-side. Added `getFeaturedTeachersAction` and `getLatestTutorJobsAction` (fixed-params
+  variants used only by the homepage) and wrapped `getTutorJobStatsAction` in place, all three
+  via `unstable_cache` with a 5-minute revalidate — the general filtered/paginated
+  `getTeachersAction`/`getTutorJobsAction` used by the directory and listing pages are
+  untouched, so search results stay live. `ViewTracker.tsx`'s once-per-mount `useRef` guard was
+  checked and left alone — that traffic is real user activity, not waste. Bell polling drops
+  from 120 requests/hr/session (30s) to 12 (5min), a deterministic 90% cut; the three homepage
+  endpoints are now capped at one live Laravel fetch per 5-minute window regardless of view
+  volume, down from one fetch per homepage render. Rollback: `git revert` the
+  `ustaadsearch-frontend` commit for this change.
+
 ### Fixed
 - **Cache store reverted from Redis to `database`.** The Upstash Redis free tier hit its
   500K/month command cap (513K commands used against 193KB of the 256MB storage quota — a
