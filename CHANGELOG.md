@@ -7,6 +7,22 @@ Format: newest entries at the top.
 
 
 ### Fixed
+- **Teacher and institution registration could 500 when a new signup shared a name with an
+  existing account.** `CreateRoleProfile` picked a username by running
+  `Teacher::where('username', $username)->exists()` in a loop and then saving — a
+  check-then-save race, not an atomic reservation. Two near-simultaneous registrations for the
+  same name (e.g. two people both named "Waqas Rahman") could both pass the `exists()` check
+  for `waqas-rahman` before either row committed; the second `save()` then hit
+  `teachers_username_unique`, threw unhandled, and rolled back the whole registration
+  transaction — the new user's account never got created, and they saw a failed signup with no
+  clear reason. Same bug, same shape, in the institution branch via
+  `InstitutionService::generateUniqueUsername()`. Replaced both with a single
+  `assignUniqueUsername()` that treats the DB's unique constraint as the source of truth: it
+  saves the candidate username directly and only falls back to `name-1`, `name-2`, ... by
+  catching `UniqueConstraintViolationException` and retrying, so a genuine conflict just
+  advances the suffix instead of failing the request.
+
+### Fixed
 - **Two thirds of teachers never completed a profile, and the machinery meant to bring them
   back had been broken for months.** Investigation started from "how do we get teachers to
   finish their profiles" and found that motivation is not the problem: a teacher who confirms
