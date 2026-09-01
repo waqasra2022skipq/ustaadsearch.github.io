@@ -6,6 +6,84 @@ Format: newest entries at the top.
 ---
 
 
+### Fixed
+- **Recommended Teachers was ranking blank profiles above real candidates, and barely cared
+  where anyone lived.** A Karachi "Montessori Directress" posting returned teachers from
+  Lahore, Islamabad and Multan, with rows showing no city, no subjects and no experience
+  scoring Match 69–74. Four independent causes, none of them "the teacher has no CV":
+  - **A quarter of the corpus shared two embedding vectors.** `TeacherEmbeddingService::buildSearchDocument()`
+    assembled its document with `array_filter`, and `gender` and `mode` are both NOT NULL with
+    database defaults — so a profile where nothing had ever been filled in still produced
+    `"Male teacher. Teaching mode: onsite"` and the `$document === ''` guard never fired. 954
+    blank profiles were embedded on that one sentence; `teacher_embeddings.document_hash`
+    showed **388 teachers sharing one vector and 35 sharing another**. Read literally that
+    string *is* a description of a teacher, so it scored ~0.93 against any teaching query. The
+    emptiness test now ignores the three parts that are true of everyone (gender, mode,
+    country) and requires at least one thing the teacher actually told us. **Documents for
+    teachers who have one are byte-identical, so stored hashes stay valid and no version bump
+    or re-embedding was needed**; 899 stub rows were pruned (1,655 → 756 embeddings), and they
+    regenerate on their own the moment such a teacher fills anything in.
+  - **`NEUTRAL` was being applied when the *teacher* was silent, not just when the job was.**
+    `JobStructuralScorer`'s 0.5 exists so a factor the job says nothing about counts neither
+    way, but it fired whenever *either* side was missing — so an entirely empty profile
+    collected a guaranteed 0.275 structural floor (city 0.5 + mode 1.0 + salary 0.5 + rating
+    0.5) and, blended at 0.65 semantic / 0.35 structural, landed on exactly Match 70. New
+    `Teacher::scopeRankable()` — `subjects` non-empty **OR** `cv_path` present — is now a hard
+    elimination alongside blocked, unavailable and already-applied. **Deliberately not "has a
+    CV"**: 159 teachers have their subjects filled in and no CV yet, and suppressing them would
+    have cost real candidates to catch the blank rows, while still admitting 70 teachers who
+    have a CV and nothing else. A CV keeps a teacher rankable because a human can read one even
+    when the tags are empty. It is stated explicitly rather than left to the embedding
+    requirement because the structural-only fallback drops that requirement, and that is
+    precisely where blank rows do the most damage.
+  - **Location was worth 7% of the score and compared with string equality.** City is 0.20 of
+    the structural score which is 0.35 of the blend, so a Lahore teacher lost **3.5 Match
+    points out of 100** against an identical Karachi one — and a teacher with no city at all
+    lost the same, so leaving the field blank cost nothing. Worse, both sides are hand-typed
+    `varchar(100)`: the top row of the reported screenshot read `Karachi.` and was scored as
+    living elsewhere over a trailing full stop. New `App\Support\CityName` resolves a free-text
+    value to a *set* of city keys — built like `Taxonomy`, an alias map plus a normalizer, no
+    geocoding — handling punctuation, case, trailing provinces (`Lahore Punjab`), buried cities
+    (`LAHORE (L033)`, `Chakri road … Rawalpindi Lane no 3`), multi-city values
+    (`Islamabad/Rawalpindi` matches either), abbreviations and misspellings (`Khi`, `Fsd`,
+    `Faislalabad`, `Wahcantt`) and Urdu spellings, while resolving `Pakistan`, `Punjab`,
+    `online` and `1097` to nothing at all. `scoreLocation()` now separates **"wrong city"**
+    from **"no city stated"** and scales both by whether attendance is actually required
+    (onsite 0.05 / 0.25, hybrid 0.30 / 0.40, online stays neutral), and an onsite posting
+    promotes `city` to 0.30 with every other factor scaled down proportionally so the weights
+    still sum to 1.0. **The extra weight is deliberately *not* taken from `mode`**: that looks
+    like dead signal because `teachers.mode` defaults to `onsite`, but among teachers who clear
+    the rankability gate the largest group is `online`, and someone who only teaches online is
+    genuinely unsuited to a school post. `jobs:send-recommendation-emails` now shares the same
+    resolver, so its cross-city quality gate and the ranking can no longer disagree.
+  - **The heaviest factor was mis-tagged on the postings themselves.** Montessori jobs were
+    tagged `general-science` (handing the 0.35 subject weight to science teachers — that was
+    the Lahore teacher sitting second) or `all`, which no teacher carries, so the subject
+    factor divided by one and scored **every** candidate 0.0, collapsing the ranking onto the
+    semantic side where the stub vectors lived. `montessori` and `early-years` are now real
+    subjects in both `Taxonomy` and the frontend's `SUBJECTS` list (they were selectable in
+    neither, which is why exactly one teacher carried the tag), and new
+    `Taxonomy::constrainingSubjectSlugs()` drops `all`/`any`/`none` at the scoring boundary so
+    such a posting reads as "states no subject preference". Kept out of `subjectSlug()` itself,
+    which stays lossless — `all` is round-tripped by the write path and spelled out as "all
+    subjects" by the tutor-job embedding recipe, so changing it globally would have silently
+    re-hashed two embedding corpora. Five open Montessori postings were re-tagged off
+    `general-science`.
+  - **Recalibrated the semantic rescale against the cleaned corpus.** Measured across twelve
+    postings spanning six subjects, query-to-teacher cosine sits at p50 0.67, p90 0.71, p99
+    0.74 and tops out at 0.79 — so the old 0.55 floor scored the *median*, unrelated teacher at
+    0.55 semantic, handing it 0.36 of the blend for free, while the top of the shortlist
+    saturated at 1.00 and stopped discriminating. New `search.semantic.recommendation_floor`
+    (0.62) with span 0.16. It is a **new knob rather than a change to `min_score`**, which is
+    also `SemanticRanker`'s relevance cutoff for user-facing AI search — tuning a shortlist
+    must not quietly tighten search recall across all three corpora. Same precedent
+    `digest_min_score` set.
+  - Admin widget: new "Same city only" and "Has CV" filters (reading from a deeper slice of the
+    ranking, since the shortlist is truncated before the widget sees it, or a filtered view
+    would show two rows), the ranker's existing strong/possible confidence band surfaced
+    instead of a second hardcoded 70 that could drift from it, and Match no longer renders an
+    integer as "70.0" (backend + frontend + Filament)
+
 ### Changed
 - **Cut self-inflicted API request volume: slower notification polling, cached homepage
   widgets.** An nginx log review on the DigitalOcean droplet found the traffic burning through
