@@ -7,6 +7,105 @@ Format: newest entries at the top.
 
 
 ### Fixed
+- **Two thirds of teachers never completed a profile, and the machinery meant to bring them
+  back had been broken for months.** Investigation started from "how do we get teachers to
+  finish their profiles" and found that motivation is not the problem: a teacher who confirms
+  their email completes their profile **73%** of the time, one who doesn't, **17%** — and 1,062
+  of 1,642 teachers had never confirmed. Four defects, not a UX gap:
+  - **The verification reminder had never sent a single email.** `SendWelcomeEmail` stamped
+    `verification_reminder_sent` when it queued the *welcome* mail, and
+    `SendVerificationReminders` selected `where('verification_reminder_sent', false)` — one
+    column meaning two things, with the welcome listener always consuming it first. The
+    command was scheduled daily at 00:30 and its candidate set was **permanently empty**;
+    1,176 unverified users carried the flag with no follow-up ever sent. Split into
+    `welcome_email_sent_at`, `verification_reminder_sent_at` and `verification_reminder_count`,
+    one fact each, and the reminder is now a short day-1/3/7 sequence that stops. It is capped
+    per run and **ignores accounts older than 30 days by default** — there are ~1,000 dormant
+    unverified signups and blasting them from a transactional domain is a deliverability
+    problem, so widening that window is a deliberate `--max-age-days` decision, not automatic.
+  - **Verification links expired in 60 minutes.** All three builders — the welcome listener,
+    the reminder, and the `VerifyEmail` override in `AppServiceProvider` — hardcoded
+    `now()->addMinutes(60)`, so anyone opening the mail after lunch got a dead link, and the
+    resend route sits behind `auth:sanctum`. A signed URL over an email hash is not a password
+    reset. Now one `App\Support\EmailVerificationLink` builder on `auth.verification.expire`,
+    defaulting to 72 hours, and the frontend's verify page offers "Send me a new link" instead
+    of a dead end.
+  - **~350 onboarding emails were never sent at all.** `failed_jobs` held 141 `WelcomeMail` and
+    529 `VerificationReminderMail` rows, dominated by `Resend: Too many requests. You can only
+    make 2 requests per second` — nothing throttled mail dispatch. **141 people never received
+    a verification link in the first place.** New `resend-mail` limiter applied to all nine
+    mailables via `App\Mail\Concerns\ThrottlesProviderRate`, mirroring the `groq-summary`
+    limiter already on `GenerateTeacherAiSummaryJob`. The trait has to override
+    `newQueuedJob()` because Laravel does not copy a Mailable's middleware onto the
+    `SendQueuedMailable` wrapper it actually queues.
+  - **Verification gated nothing, while the dashboard claimed otherwise.** `grep -c "'verified'"
+    routes/api.php` returns 0. Rather than adding a gate — the marketplace has 145 lifetime
+    applications, so suppressing supply is the more expensive mistake, and
+    `Teacher::scopeRankable()` already keeps blank profiles out of shortlists — the banner now
+    says the one thing that is true: unverified addresses are skipped by the job-alert digest.
+- **CV extraction was failing on roughly half of uploads, and discarding most of what it did
+  extract.** A CV is the highest-leverage action on the platform — verified teachers who upload
+  one average a **89.1** profile score against **29.4** for those who don't — but
+  `ProcessTeacherCvProfileJob` had 294 failures, led by `AI response for CV extraction was not
+  valid JSON`.
+  - **Structured output restored.** Commit `29f8799` had removed `HasStructuredOutput` and its
+    schema in favour of prompting for JSON, which was correct at the time: the text model was
+    `llama-3.3-70b-versatile`, which 400s on `response_format: json_schema` (still documented on
+    `JobSearchParserAgent`, which is deliberately left alone). The model is now
+    `openai/gpt-oss-120b`, which **does** support schemas — verified against the live API before
+    changing anything. Two things had to be got right: Groq's strict mode requires `required` to
+    list *every* property, so optional fields are `nullable()->required()` rather than omitted;
+    and `->enum()` combined with `->nullable()` emits a bare `"string"` type, so the provider
+    400s the moment the model correctly answers `null` for a CV that states no gender — the enum
+    is dropped and the vocabulary enforced downstream where it already was. The prompt no longer
+    restates the JSON shape with pseudo-types (`"is_current": "boolean"`), which is what invited
+    the model to echo those literals back; it now carries only the closed vocabularies the
+    schema cannot express. The prose parser is kept as a fallback for a provider that ignores
+    `response_format`.
+  - **Subjects, grades and city are now filled from the CV.** The extractor was already
+    returning `experiences[].subjects_taught`, `.grade_levels` and `.city`, and
+    `hydrateMissingFromCv()` was writing them to `teacher_experiences` and then **ignoring
+    them** — a CV upload filled four scalars while leaving untouched the three fields that
+    decide whether a teacher can be matched at all (subjects alone are 35% of the shortlist's
+    structural score and 20% of the profile score). They are derived through `Taxonomy` and
+    `CityName` so "Maths" and "Karachi." land on the slugs the scorer actually compares, still
+    blank-only, and the job's skip-guard was widened to match or a teacher with a headline and
+    no subjects would be treated as complete.
+  - **Roles are no longer silently discarded.** Hydration required `institution_type`,
+    `employment_type` *and* `start_date` to be non-blank, while `normalizeExtractedData()` nulls
+    anything outside its allow-list — so "Beaconhouse, Lecturer, 2019-2022" reported as
+    `private_school` vanished with no log line. Both enums carry an `other` member for exactly
+    this and are now defaulted to it; `start_date` stays required because the column is NOT NULL
+    and a made-up date is worse than an omitted role. Drops are logged either way.
+  - Also: a `RateLimited` middleware on the job (it had none, unlike the summary job that shares
+    the same Groq key), a `failed()` handler, and `cv_parsed_at`/`cv_parse_failed_at` so a
+    teacher whose CV could not be read stops seeing the same "CV updated successfully!" toast as
+    one whose profile was just filled in for them.
+- **Registration asked for less than the backend already accepted, then made you log in again.**
+  `RegisterRequest` has always validated `phone` and `AuthService` has always persisted it — no
+  client ever sent one, so **every teacher started at `phone = null`**, forfeiting 10 profile
+  points and leaving a dead WhatsApp button on the institution's shortlist. Adding the field was
+  frontend-only. New `App\Support\PhoneNumber` canonicalises the three Pakistani spellings
+  (`03xxxxxxxxx`, `+92…`, bare `92…`) to E.164 while leaving genuinely international numbers on
+  their own dialling code — which also fixes the shortlist's WhatsApp link, whose old normaliser
+  rewrote *any* leading `0` to `92` and so mangled the overseas numbers already in the table.
+  Normalisation happens in `prepareForValidation()` rather than the service, because validating
+  the raw input let `03001234567` pass `unique` against a stored `+923001234567` and then fail on
+  the database constraint — a 500 where a 422 belongs. Registration also **discarded the Sanctum
+  token the API already returns** and redirected to the login form, making people retype the
+  password they had just chosen at the moment of highest intent; it now sets the cookie and sends
+  teachers to a new single-action `/teacher/welcome` step that asks for a CV, explains why, and
+  has a plain visible skip.
+- **The profile-completion nudge never reached the people who needed it.** The only one that
+  existed rode on the tutor-jobs digest, which `continue`s past a teacher when there are no
+  matching jobs to send — and a teacher with no subjects matches nothing, so the reminder
+  reached everyone *except* empty profiles. New standalone `teachers:send-profile-reminders`,
+  modelled on `SendJobRecommendationEmails` (per-run cap, `email_suppressions` check, own
+  send-state columns), naming the specific missing fields, gated on the two that decide
+  rankability, capped at two sends 14 days apart and skipping accounts that have paused job
+  matching (backend + frontend)
+
+### Fixed
 - **Recommended Teachers was ranking blank profiles above real candidates, and barely cared
   where anyone lived.** A Karachi "Montessori Directress" posting returned teachers from
   Lahore, Islamabad and Multan, with rows showing no city, no subjects and no experience
