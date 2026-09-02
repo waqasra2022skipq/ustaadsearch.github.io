@@ -7,6 +7,23 @@ Format: newest entries at the top.
 
 
 ### Fixed
+- **Institution dashboard's applications and analytics screens had no mobile layout.** The
+  per-job applications screen (`/institution/dashboard/jobs/[slug]/applications`) — the screen
+  an institution admin is most likely to open from a phone — rendered only a wide `Candidate |
+  Contact | Applied | Status | Actions` table with no card fallback, forcing horizontal
+  scrolling on small screens. Its kanban pipeline view was worse: a `min-w-[1320px]` 5-column
+  board relying on HTML5 drag-and-drop, which doesn't fire on touch devices at all, so on a
+  phone it was both cramped and non-functional for its one purpose (moving a candidate between
+  stages). `ApplicationsTable.tsx` now renders a `lg:hidden` card list (reusing the existing
+  status-update and detail-drawer handlers) regardless of the table/pipeline toggle, and both
+  the table and the pipeline grid are gated to `hidden lg:block` — so mobile always gets cards,
+  and the desktop toggle is untouched. The pipeline/table toggle buttons are hidden below `lg`
+  since they no longer have a visible effect on mobile. Analytics' "Job performance" table
+  (`AnalyticsDashboard.tsx`) had the same gap — a `min-w-[980px]` 9-column table with no
+  fallback — fixed the same way, with a compact per-job card (Views / Apps / Shortlisted)
+  matching the existing `RankedJobsPanel` card pattern.
+
+### Fixed
 - **Teacher and institution registration could 500 when a new signup shared a name with an
   existing account.** `CreateRoleProfile` picked a username by running
   `Teacher::where('username', $username)->exists()` in a loop and then saving — a
