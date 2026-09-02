@@ -23,6 +23,34 @@ Format: newest entries at the top.
   advances the suffix instead of failing the request.
 
 ### Fixed
+- **The reminder commands emptied the provider's daily quota in minutes, because the throttle
+  guarded the wrong axis.** The first production run queued ~178 verification reminders and 33
+  profile reminders and tripped Resend's "200% of your daily quota" cutoff. The `resend-mail`
+  limiter added alongside them worked exactly as designed and was still useless here: it bounds
+  the provider's *per-second* request cap at 60/minute, which is 3,600/hour, so a 100/day
+  allowance was gone in about three minutes. The Resend log shows the whole verification run
+  landing between 00:30:07 and 00:32:20.
+  - **Per-command caps do not compose.** Four bulk senders each carried an independently chosen
+    ceiling -- tutor digest 70/day, job recommendations 50/run, verification reminders 200/run,
+    profile reminders 100/run -- summing to 420/day against a 100/day quota. Worse, the two
+    that already existed came to 120 on their own, so the account had been running at or over
+    quota for at least a week before any reminder was added (Resend's own metrics: 142, 107,
+    112 and 104 on separate days). The caps were the mistake, not the volume: each looked
+    modest in isolation and nothing anywhere knew the total.
+  - New `App\Support\MailBudget` is a single daily ceiling every bulk sender draws from, keyed
+    on the UTC date the provider resets on. A `MessageSending` listener counts **every**
+    outbound message, so the budget reflects real usage rather than each command's assumption
+    that the quota is its own. `mail.transactional_reserve` (40 of 100) is held back and can
+    only be spent by transactional mail -- without it a campaign at midnight takes the whole
+    day and a teacher signing up that evening silently never receives a verification link,
+    which is bulk mail starving the thing it exists to support. Per-run caps drop to
+    25/15/20/40, sends are staggered across the day rather than stacked at 00:30-01:00, and a
+    `--dry-run` still reports the full eligible set so it stays a planning tool.
+  - Worth stating plainly: on the current plan this only rations the shortage. Existing volume
+    already consumes the whole 100/day allowance, so the reminder campaigns have almost no room
+    until the plan is raised -- at which point `RESEND_DAILY_QUOTA` is the one value to change.
+
+### Fixed
 - **Two thirds of teachers never completed a profile, and the machinery meant to bring them
   back had been broken for months.** Investigation started from "how do we get teachers to
   finish their profiles" and found that motivation is not the problem: a teacher who confirms
