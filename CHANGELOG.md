@@ -7,6 +7,34 @@ Format: newest entries at the top.
 
 
 ### Fixed
+- **The mail budget's send ordering was the reverse of what it claimed, and a dry run could
+  spend the day's allowance.** Follow-up to the shared `MailBudget` ceiling. That change moved
+  `auth:send-verification-reminders` from 00:30 to 06:00 with a comment saying it was
+  "deliberately first in the day … so it gets first call on the shared allowance" — but
+  `jobs:send-recommendation-emails` runs at 04:00 and was left untouched, so verification
+  reminders actually got served *last* of the two. Ordering is load-bearing here: the four bulk
+  senders' caps sum to 100 against a 60-slot bulk pool, so whoever runs first wins on a busy
+  day. Verification reminders now run at 03:45 (08:45 PKT — still a reasonable inbox hour),
+  ahead of the 04:00 recommendation emails, and the comment names the real constraint.
+  Separately, `SendJobRecommendationEmails` called `MailBudget::grantBulk()` *before* checking
+  `--dry-run`, unlike the other two reminder commands: on an exhausted day a dry run reported
+  "0 groups would be emailed" and logged a spurious "Mail budget limited a bulk send" entry,
+  breaking the "a dry run shows the full candidate set regardless of budget" contract that
+  `MailBudgetTest` pins elsewhere. Dry runs now use the command's own configured cap and never
+  touch the budget. That command also now bails out *before* the job query when its grant is
+  zero, instead of building a full teacher ranking per job only to discard it.
+- **Dead null-handling left behind by the mail budget change.** `grantBulk()` returns a
+  non-nullable `int`, which silently made several `=== null` branches unreachable — including
+  `tutor-jobs:send-daily-digest`'s old "no `--max-emails` = uncapped run, rotation cursor
+  untouched" mode. That mode is genuinely gone (every run is now capped by the day's
+  allowance), so the unreachable branches in `resolveRotationCursor()`,
+  `rememberRotationCursor()` and `hasReachedEmailLimit()`, plus the `?? 'unlimited'` fallback
+  in the recommendation-email summary, were removed rather than left as false signal that an
+  uncapped mode still exists. The digest gained the same budget-exhausted early return the
+  other senders have, and a test now pins that a run without `--max-emails` does advance the
+  rotation cursor — the stateful side effect the next scheduled run resumes from, previously
+  untested in either direction. Also corrected a stale `config/search.php` comment still citing
+  the digest at 70/day after the same change lowered it to 40.
 - **Institution dashboard's applications and analytics screens had no mobile layout.** The
   per-job applications screen (`/institution/dashboard/jobs/[slug]/applications`) — the screen
   an institution admin is most likely to open from a phone — rendered only a wide `Candidate |
