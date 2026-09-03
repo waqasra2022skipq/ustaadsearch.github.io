@@ -5,6 +5,51 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Area-level location, Phase 2: `area_id` attached to the four tables that carry a location,
+  plus teacher travel willingness.** Phase 1 gave us a resolver with nothing to resolve into a
+  column; this wires it in. `job_posts`, `teachers`, `tutor_jobs` and `institutions` each gained
+  a nullable `area_id` (FK, `nullOnDelete`), a `job_post_catchment_areas` pivot lets an
+  institution name the neighbouring areas it will also hire from, and `teachers.max_travel`
+  (`own_area | nearby | city | any`, default `city`) records how far a teacher will travel. It is
+  a **plain varchar, not an ENUM, deliberately** — the last enum-modify migration broke the whole
+  suite on SQLite, which rebuilds a table for an `ALTER`; the allowed set is pinned in a
+  `Teacher::MAX_TRAVEL_OPTIONS` constant and the Form Request instead. Everything here is
+  **additive and inert**: the existing free-text `city`/`address` columns stay and keep being
+  written, a row with a null `area_id` is still fully rankable, and nothing reads `area_id` for
+  scoring yet (that is Phase 3) — so this ships ahead of the change that uses it, independently
+  revertible. `area_id` is kept in step with the free text three ways: a `saving` observer on
+  Teacher re-resolves it from address/city (non-destructively — it only upgrades to a known area,
+  never wipes one a CV or the backfill set, and defers entirely to an explicit `area_id`), a new
+  `TeacherProfileService::areaFromCv()` fills it passively from parsed CV rows, and the admin AI
+  job importer resolves the locality it used to discard off school posters into an `area_id` plus
+  a one-area catchment. `area_id` is **not** added to any embedding document or to
+  `TeacherProfileObserver::EMBEDDING_ONLY_FIELDS` — it is an exact orderable constraint like
+  salary and gender, not embedding input, so it must never trigger a re-embed. A
+  `php artisan areas:backfill {--dry-run} {--model=}` command resolves existing rows from their
+  own text (never overwriting a set `area_id`) and, on a dry run, prints the most common
+  *unresolved* strings — the input to the next alias-seeding pass. Both recommendation
+  fingerprints now include `area_id` and the sorted catchment list, so the 30-minute ranking
+  cache rotates on a location edit rather than serving a stale shortlist.
+- **Area-level location, Phase 1: a normalised area taxonomy and a resolver for it.** An
+  institution hiring in North Nazimabad, Karachi was shown a candidate from DHA ranked
+  identically to an equally-qualified one 2 km away, because location was a city-level boolean —
+  both scored the same. The fix begins with vocabulary the rest of the feature can build on: an
+  `areas` table (city-scoped, so "Model Town" can exist in both Lahore and Rawalpindi without
+  colliding, with an optional coarse `zone` and a nullable centroid) and an `area_aliases` table
+  of globally-unique, pre-normalised spellings. `App\Support\AreaName` mirrors the existing
+  `App\Support\CityName` on purpose — same normaliser (lowercasing, punctuation to spaces,
+  non-Latin preserved so Urdu aliases resolve), no new pattern to learn — and resolves free text
+  by exact match, then the longest whole-word alias/name buried in the string (so "nazimabad"
+  never wins inside "north nazimabad"), then null. A city hint narrows an otherwise-ambiguous
+  name to one city; without it, an ambiguous name resolves to null rather than guessing. Centroids
+  are left NULL wherever a coordinate is not certain — a NULL centroid degrades to zone matching,
+  a fabricated one produces confidently wrong distances. `AreaSeeder` is idempotent and covers
+  the seven cities where hiring happens; because live `teachers.address` frequency data was not
+  available, this first pass is seeded from known geography, and the Phase 2 backfill's `--dry-run`
+  surfaces the real unresolved strings to refine it. Inert on its own — nothing resolves against
+  the taxonomy until Phase 2 attaches `area_id`.
+
 
 ### Fixed
 - **The mail budget's send ordering was the reverse of what it claimed, and a dry run could
