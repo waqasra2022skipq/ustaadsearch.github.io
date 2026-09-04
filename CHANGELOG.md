@@ -6,24 +6,37 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Area-proximity matching is complete across school jobs, tutor jobs, teacher discovery,
+  reverse recommendations, notifications, digests, PDFs, emails, and dashboard cards.** The
+  corrective foundation preserves unresolved school-job locality, makes aliases city-scoped,
+  records centroid provenance, validates every selected area against the submitted city, clears
+  stale inferred areas after a move, exposes a safe public area lookup, and round-trips
+  `area_id`/`max_travel` through every relevant API and form. Physical recommendations now reject
+  unknown or different cities, classify the full eligible pool before truncation, widen
+  cumulatively from same-area through same-city supply, and sort by proximity tier before the
+  existing 65/35 semantic/structural score. Online work remains location-neutral. Result rows
+  carry a human-readable `location_match`, and shortlist endpoints report scope and thin-supply
+  metadata. Embedding recipes are unchanged. The production switch defaults off pending the
+  mandatory read-only audit, explicit `AreaSeeder` run, alias refinement, verified centroid
+  loading, and per-model backfill documented in
+  `ustaadsearch/docs/area-proximity-rollout.md`.
 - **Area-level location, Phase 2: `area_id` attached to the four tables that carry a location,
   plus teacher travel willingness.** Phase 1 gave us a resolver with nothing to resolve into a
   column; this wires it in. `job_posts`, `teachers`, `tutor_jobs` and `institutions` each gained
   a nullable `area_id` (FK, `nullOnDelete`), a `job_post_catchment_areas` pivot lets an
   institution name the neighbouring areas it will also hire from, and `teachers.max_travel`
-  (`own_area | nearby | city | any`, default `city`) records how far a teacher will travel. It is
+  (`own_area | nearby | city`, nullable during rollout with legacy null treated as `city`) records how far a teacher will travel. It is
   a **plain varchar, not an ENUM, deliberately** — the last enum-modify migration broke the whole
   suite on SQLite, which rebuilds a table for an `ALTER`; the allowed set is pinned in a
   `Teacher::MAX_TRAVEL_OPTIONS` constant and the Form Request instead. Everything here is
-  **additive and inert**: the existing free-text `city`/`address` columns stay and keep being
-  written, a row with a null `area_id` is still fully rankable, and nothing reads `area_id` for
-  scoring yet (that is Phase 3) — so this ships ahead of the change that uses it, independently
-  revertible. `area_id` is kept in step with the free text three ways: a `saving` observer on
-  Teacher re-resolves it from address/city (non-destructively — it only upgrades to a known area,
-  never wipes one a CV or the backfill set, and defers entirely to an explicit `area_id`), a new
+  **additive and independently gated**: the existing free-text `city`/`address` columns stay and
+  keep being written, and a row with a null `area_id` falls back honestly to city matching.
+  `area_id` is kept in step with the free text three ways: a `saving` observer on
+  Teacher re-resolves it from address/city (clearing a stale inferred area when a move no longer
+  resolves, while deferring to an explicitly selected valid `area_id`), a new
   `TeacherProfileService::areaFromCv()` fills it passively from parsed CV rows, and the admin AI
-  job importer resolves the locality it used to discard off school posters into an `area_id` plus
-  a one-area catchment. `area_id` is **not** added to any embedding document or to
+  job importer preserves the locality it used to discard off school posters and resolves it into
+  an `area_id` where possible. `area_id` is **not** added to any embedding document or to
   `TeacherProfileObserver::EMBEDDING_ONLY_FIELDS` — it is an exact orderable constraint like
   salary and gender, not embedding input, so it must never trigger a re-embed. A
   `php artisan areas:backfill {--dry-run} {--model=}` command resolves existing rows from their
@@ -37,7 +50,7 @@ Format: newest entries at the top.
   both scored the same. The fix begins with vocabulary the rest of the feature can build on: an
   `areas` table (city-scoped, so "Model Town" can exist in both Lahore and Rawalpindi without
   colliding, with an optional coarse `zone` and a nullable centroid) and an `area_aliases` table
-  of globally-unique, pre-normalised spellings. `App\Support\AreaName` mirrors the existing
+  of area-scoped, pre-normalised spellings. `App\Support\AreaName` mirrors the existing
   `App\Support\CityName` on purpose — same normaliser (lowercasing, punctuation to spaces,
   non-Latin preserved so Urdu aliases resolve), no new pattern to learn — and resolves free text
   by exact match, then the longest whole-word alias/name buried in the string (so "nazimabad"
