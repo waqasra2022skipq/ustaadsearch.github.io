@@ -139,6 +139,15 @@ Format: newest entries at the top.
   list so adding a tab without making it persistable fails the build.
 
 ### Fixed
+- **The admin AI job-import review now exposes and saves the location data extracted from
+  external hiring posts.** The extractor and creation service already preserved a per-job
+  locality and could resolve it to `area_id`, but the review card rendered only City and then
+  recomputed the area invisibly during creation. Each reviewed role now shows an editable
+  Location / Locality field, a city-scoped Primary Area selector preselected from recognised
+  text, and optional Catchment Areas. The reviewed values are authoritative when the job is
+  created: `location_text` and `area_id` are stored on `job_posts`, additional catchments are
+  synchronized to `job_post_catchment_areas`, changing City clears incompatible selections,
+  and publishing rejects any primary or catchment area from another city.
 - **The homepage hero headline lost the space between its two halves on mobile.** The heading
   splits with `<br className="hidden sm:block" />`, which is hidden below `sm` — with no
   whitespace in the markup either side of it, the two halves ran together as "Teaching jobs in
