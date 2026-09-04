@@ -20,6 +20,17 @@ Format: newest entries at the top.
   mandatory read-only audit, explicit `AreaSeeder` run, alias refinement, verified centroid
   loading, and per-model backfill documented in
   `ustaadsearch/docs/area-proximity-rollout.md`.
+- **Area-proximity rollout follow-up hardened locality capture and backfill.** Unresolved audit
+  and dry-run output is now grouped by `city_key`, so identical locality text in different cities
+  can no longer be mistaken for one alias candidate. City normalization gained audited Pakistani
+  misspellings (`faislabad`, `islambad`, `krachi`, `peshwar`, `dikhan`, `okarah`, and `sarghoda`),
+  while the area seed gained only unambiguous city-scoped spellings for Johar Town,
+  Gulistan-e-Johar, and Rawalpindi's Bahria Town phases 1, 6, and 8. The school-job AI extractor
+  now requests a locality for every individual job instead of relying only on the institution's
+  shared address; both Filament and API draft imports preserve that value in
+  `job_posts.location_text`, prefer it over the institution address, and resolve `area_id` when
+  the taxonomy recognises it. Unresolved text remains stored for later taxonomy improvements and
+  area-only changes still do not trigger re-embedding.
 - **Area-level location, Phase 2: `area_id` attached to the four tables that carry a location,
   plus teacher travel willingness.** Phase 1 gave us a resolver with nothing to resolve into a
   column; this wires it in. `job_posts`, `teachers`, `tutor_jobs` and `institutions` each gained
