@@ -6,7 +6,52 @@ Format: newest entries at the top.
 ---
 
 
+### Changed
+- **The homepage hero now speaks to whichever side of the marketplace the visitor is on,
+  instead of assuming everyone signed-out is a teacher.** The hero has always had two
+  messages — "Teaching jobs in Pakistan, all in one place." and "Post a vacancy. Get a
+  shortlist." — but picked between them purely from `currentUser?.role === "institution"`.
+  Signed-out visitors are the majority of homepage traffic and include *both* sides, so a
+  school or a parent landing on the site got a page that read as if it wasn't for them.
+  The considered-and-rejected option was auto-rotating the two on a timer. That fails on four
+  counts: it trips WCAG 2.2.2 (Pause, Stop, Hide) once it runs past five seconds; it rotates
+  the site's primary keyword phrase out of the `<h1>`; it destabilises the LCP element; and —
+  the decisive one — it would put "Post a vacancy" above a search widget still set to the
+  "School & College Jobs" tab, so the headline and the tool underneath would contradict each
+  other, with copy changing under someone mid-read or mid-type in the search input.
+  Instead the copy follows the search tab the visitor picks, reusing the audience selector the
+  hero already had. `school-jobs` and `gigs` keep the existing work-seeker copy; `hire` gets a
+  new hiring variant. Three tabs map to two messages deliberately, so switching between the two
+  work boards doesn't churn the headline. The hiring copy is neutral between schools and
+  parents ("Find the right teacher. Get a shortlist.") because the `hire` tab lands on
+  `/teachers`, which serves both — institution-specific copy there would be wrong for a parent
+  looking for a home tutor. Signed-in institutions still get their exact role copy regardless of
+  tab; that's known truth rather than an inference from a click.
+  The choice is remembered in a `us_hero_tab` cookie read server-side in `page.tsx`, so a
+  returning school gets the right headline in the *first paint* — a `localStorage`-on-mount
+  approach would have flashed the teacher copy first. The value is validated against the tab id
+  union before use. Because the tab is only a search-scope hint, a static "Hiring for your
+  school? Post a vacancy free →" link now sits under the widget for signed-out visitors, so the
+  second audience is served above the fold without depending on them discovering the third tab.
+  Swaps use a 200ms fade behind a new `animate-hero-fade` utility — the first `@keyframes`,
+  first `@theme` block, and first `prefers-reduced-motion` handling in the codebase, all added
+  to `globals.css` (Tailwind v4 has no config file here).
+  No fixed height is reserved for the copy block: with the real webfont both variants are two
+  lines on desktop, so the swap is height-neutral where most traffic sees it, and the residual
+  ~18px settle on mobile is user-initiated (excluded from CLS) and covered by the fade.
+  Reserving a guessed height would have traded that for permanent dead space on every load.
+  `TabId`/`isTabId`/`HERO_TAB_COOKIE` moved to `src/lib/heroTabs.ts`: `HeroSection` is a
+  `"use client"` module, and a server component can only render or pass props to a client
+  module's exports, never *call* one — `page.tsx` calling `isTabId()` built and typechecked
+  fine but 500'd at request time. `TABS` now carries a `satisfies` clause tying its ids to that
+  list so adding a tab without making it persistable fails the build.
+
 ### Fixed
+- **The homepage hero headline lost the space between its two halves on mobile.** The heading
+  splits with `<br className="hidden sm:block" />`, which is hidden below `sm` — with no
+  whitespace in the markup either side of it, the two halves ran together as "Teaching jobs in
+  Pakistan,all in one place." on every phone. Pre-existing, and the new hiring variant would
+  have inherited it.
 - **The mail budget's send ordering was the reverse of what it claimed, and a dry run could
   spend the day's allowance.** Follow-up to the shared `MailBudget` ceiling. That change moved
   `auth:send-verification-reminders` from 00:30 to 06:00 with a comment saying it was
