@@ -6,6 +6,29 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **An unstated teacher area no longer ranks below a known-but-distant one, and the admin
+  shortlist now says how far it had to widen.** Two corrections to the area-proximity work,
+  both still behind `RECOMMENDATION_LOCATION_ENABLED`. The classifier scored a teacher with no
+  stated area at 0.20 — *below* `same_city` (0.35) — so saying nothing about an area read as
+  worse than being known to be far away. Almost the whole existing corpus sits in exactly that
+  position until the capture UI has been in front of them and the backfill has run, so throwing
+  the switch would have demoted the roster on a field nobody had been asked to fill. It is now
+  0.50: silence is not distance. The mild incentive that creates to leave the field blank is
+  answered by profile-completeness scoring rather than by the ranker, and the value is worth
+  revisiting once area coverage is high enough to read blank as a real signal. Because proximity
+  tier still sorts ahead of the blended score, this governs the confidence band, the
+  `min_combined_score` floor and the recommendation-email quality gate rather than the visible
+  order — an unstated-area teacher still follows a known-but-far one within the list itself.
+  Separately, `RecommendedTeachersWidget` was the one surface the rollout missed: the API reports
+  scope and thin-supply metadata and the teacher dashboard renders it, but the Filament shortlist
+  an admin actually reviews presented a thin local pool and a strong one identically. It now
+  carries a "Same area only" toggle beside "Same city only" — reusing the existing
+  `FILTERED_POOL` deeper slice, because filtering happens after the ranking is truncated, and
+  comparing stored `area_id`s rather than the ranking tier so the toggle still works with
+  proximity ranking switched off — and a heading that names the widest rung reached,
+  *"widened to Karachi (only 2 within catchment)"*, in the same register as the existing
+  semantic/structural note. The scope comes from `AreaProximityClassifier::metadata()` rather
+  than restating the ladder inside the widget.
 - **Area-proximity matching is complete across school jobs, tutor jobs, teacher discovery,
   reverse recommendations, notifications, digests, PDFs, emails, and dashboard cards.** The
   corrective foundation preserves unresolved school-job locality, makes aliases city-scoped,
