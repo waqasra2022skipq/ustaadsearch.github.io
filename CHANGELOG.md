@@ -5,6 +5,98 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **An unstated teacher area no longer ranks below a known-but-distant one, and the admin
+  shortlist now says how far it had to widen.** Two corrections to the area-proximity work,
+  both still behind `RECOMMENDATION_LOCATION_ENABLED`. The classifier scored a teacher with no
+  stated area at 0.20 — *below* `same_city` (0.35) — so saying nothing about an area read as
+  worse than being known to be far away. Almost the whole existing corpus sits in exactly that
+  position until the capture UI has been in front of them and the backfill has run, so throwing
+  the switch would have demoted the roster on a field nobody had been asked to fill. It is now
+  0.50: silence is not distance. The mild incentive that creates to leave the field blank is
+  answered by profile-completeness scoring rather than by the ranker, and the value is worth
+  revisiting once area coverage is high enough to read blank as a real signal. Because proximity
+  tier still sorts ahead of the blended score, this governs the confidence band, the
+  `min_combined_score` floor and the recommendation-email quality gate rather than the visible
+  order — an unstated-area teacher still follows a known-but-far one within the list itself.
+  Separately, `RecommendedTeachersWidget` was the one surface the rollout missed: the API reports
+  scope and thin-supply metadata and the teacher dashboard renders it, but the Filament shortlist
+  an admin actually reviews presented a thin local pool and a strong one identically. It now
+  carries a "Same area only" toggle beside "Same city only" — reusing the existing
+  `FILTERED_POOL` deeper slice, because filtering happens after the ranking is truncated, and
+  comparing stored `area_id`s rather than the ranking tier so the toggle still works with
+  proximity ranking switched off — and a heading that names the widest rung reached,
+  *"widened to Karachi (only 2 within catchment)"*, in the same register as the existing
+  semantic/structural note. The scope comes from `AreaProximityClassifier::metadata()` rather
+  than restating the ladder inside the widget.
+- **Area-proximity matching is complete across school jobs, tutor jobs, teacher discovery,
+  reverse recommendations, notifications, digests, PDFs, emails, and dashboard cards.** The
+  corrective foundation preserves unresolved school-job locality, makes aliases city-scoped,
+  records centroid provenance, validates every selected area against the submitted city, clears
+  stale inferred areas after a move, exposes a safe public area lookup, and round-trips
+  `area_id`/`max_travel` through every relevant API and form. Physical recommendations now reject
+  unknown or different cities, classify the full eligible pool before truncation, widen
+  cumulatively from same-area through same-city supply, and sort by proximity tier before the
+  existing 65/35 semantic/structural score. Online work remains location-neutral. Result rows
+  carry a human-readable `location_match`, and shortlist endpoints report scope and thin-supply
+  metadata. Embedding recipes are unchanged. The production switch defaults off pending the
+  mandatory read-only audit, explicit `AreaSeeder` run, alias refinement, verified centroid
+  loading, and per-model backfill documented in
+  `ustaadsearch/docs/area-proximity-rollout.md`.
+- **Area-proximity rollout follow-up hardened locality capture and backfill.** Unresolved audit
+  and dry-run output is now grouped by `city_key`, so identical locality text in different cities
+  can no longer be mistaken for one alias candidate. City normalization gained audited Pakistani
+  misspellings (`faislabad`, `islambad`, `krachi`, `peshwar`, `dikhan`, `okarah`, and `sarghoda`),
+  while the area seed gained only unambiguous city-scoped spellings for Johar Town,
+  Gulistan-e-Johar, and Rawalpindi's Bahria Town phases 1, 6, and 8. The school-job AI extractor
+  now requests a locality for every individual job instead of relying only on the institution's
+  shared address; both Filament and API draft imports preserve that value in
+  `job_posts.location_text`, prefer it over the institution address, and resolve `area_id` when
+  the taxonomy recognises it. Unresolved text remains stored for later taxonomy improvements and
+  area-only changes still do not trigger re-embedding.
+- **Area-level location, Phase 2: `area_id` attached to the four tables that carry a location,
+  plus teacher travel willingness.** Phase 1 gave us a resolver with nothing to resolve into a
+  column; this wires it in. `job_posts`, `teachers`, `tutor_jobs` and `institutions` each gained
+  a nullable `area_id` (FK, `nullOnDelete`), a `job_post_catchment_areas` pivot lets an
+  institution name the neighbouring areas it will also hire from, and `teachers.max_travel`
+  (`own_area | nearby | city`, nullable during rollout with legacy null treated as `city`) records how far a teacher will travel. It is
+  a **plain varchar, not an ENUM, deliberately** — the last enum-modify migration broke the whole
+  suite on SQLite, which rebuilds a table for an `ALTER`; the allowed set is pinned in a
+  `Teacher::MAX_TRAVEL_OPTIONS` constant and the Form Request instead. Everything here is
+  **additive and independently gated**: the existing free-text `city`/`address` columns stay and
+  keep being written, and a row with a null `area_id` falls back honestly to city matching.
+  `area_id` is kept in step with the free text three ways: a `saving` observer on
+  Teacher re-resolves it from address/city (clearing a stale inferred area when a move no longer
+  resolves, while deferring to an explicitly selected valid `area_id`), a new
+  `TeacherProfileService::areaFromCv()` fills it passively from parsed CV rows, and the admin AI
+  job importer preserves the locality it used to discard off school posters and resolves it into
+  an `area_id` where possible. `area_id` is **not** added to any embedding document or to
+  `TeacherProfileObserver::EMBEDDING_ONLY_FIELDS` — it is an exact orderable constraint like
+  salary and gender, not embedding input, so it must never trigger a re-embed. A
+  `php artisan areas:backfill {--dry-run} {--model=}` command resolves existing rows from their
+  own text (never overwriting a set `area_id`) and, on a dry run, prints the most common
+  *unresolved* strings — the input to the next alias-seeding pass. Both recommendation
+  fingerprints now include `area_id` and the sorted catchment list, so the 30-minute ranking
+  cache rotates on a location edit rather than serving a stale shortlist.
+- **Area-level location, Phase 1: a normalised area taxonomy and a resolver for it.** An
+  institution hiring in North Nazimabad, Karachi was shown a candidate from DHA ranked
+  identically to an equally-qualified one 2 km away, because location was a city-level boolean —
+  both scored the same. The fix begins with vocabulary the rest of the feature can build on: an
+  `areas` table (city-scoped, so "Model Town" can exist in both Lahore and Rawalpindi without
+  colliding, with an optional coarse `zone` and a nullable centroid) and an `area_aliases` table
+  of area-scoped, pre-normalised spellings. `App\Support\AreaName` mirrors the existing
+  `App\Support\CityName` on purpose — same normaliser (lowercasing, punctuation to spaces,
+  non-Latin preserved so Urdu aliases resolve), no new pattern to learn — and resolves free text
+  by exact match, then the longest whole-word alias/name buried in the string (so "nazimabad"
+  never wins inside "north nazimabad"), then null. A city hint narrows an otherwise-ambiguous
+  name to one city; without it, an ambiguous name resolves to null rather than guessing. Centroids
+  are left NULL wherever a coordinate is not certain — a NULL centroid degrades to zone matching,
+  a fabricated one produces confidently wrong distances. `AreaSeeder` is idempotent and covers
+  the seven cities where hiring happens; because live `teachers.address` frequency data was not
+  available, this first pass is seeded from known geography, and the Phase 2 backfill's `--dry-run`
+  surfaces the real unresolved strings to refine it. Inert on its own — nothing resolves against
+  the taxonomy until Phase 2 attaches `area_id`.
+
 
 ### Changed
 - **The homepage hero now speaks to whichever side of the marketplace the visitor is on,
