@@ -139,6 +139,17 @@ Format: newest entries at the top.
   list so adding a tab without making it persistable fails the build.
 
 ### Fixed
+- **Admins can now manage the matching area taxonomy from Filament instead of editing and
+  rerunning seed data for routine changes.** A new Matching & Location → Area Taxonomy
+  resource supports city-scoped areas, zones, aliases, and optional verified area-centre
+  coordinates; it normalises city keys, slugs, and alternate spellings before saving, and stops
+  one spelling from ambiguously pointing to two areas in the same city. The list is searchable
+  by canonical names and aliases, filterable by city, zone, and usage, and reports linked
+  teachers, institutions, school jobs, tutor jobs, and catchments. Areas in use cannot be deleted or moved to another
+  city, including through non-Filament model operations, while unused areas remain removable.
+  `AreaSeeder` is now initial bootstrap data and no-ops once any taxonomy exists, so later
+  deployment seeds cannot overwrite, duplicate, or resurrect administrator-managed records;
+  a tracked data migration adds this release's Askari VI entry to already-seeded installations.
 - **The admin AI job-import review now exposes and saves the location data extracted from
   external hiring posts.** The extractor and creation service already preserved a per-job
   locality and could resolve it to `area_id`, but the review card rendered only City and then
@@ -147,7 +158,15 @@ Format: newest entries at the top.
   text, and optional Catchment Areas. The reviewed values are authoritative when the job is
   created: `location_text` and `area_id` are stored on `job_posts`, additional catchments are
   synchronized to `job_post_catchment_areas`, changing City clears incompatible selections,
-  and publishing rejects any primary or catchment area from another city.
+  and publishing rejects any primary or catchment area from another city. A follow-up removes
+  the repetitive part of that review: when a poster advertises several roles at the same
+  city/locality, one shared location block is selected automatically and its reviewed values are
+  used for every created job; mixed-campus posters keep their independent controls. Catchment is
+  collapsed and blank by default because it records an employer preference, while the matching
+  algorithm already widens proximity automatically. Karachi's taxonomy now includes Askari VI
+  (`Askari 6` and `Askari six` aliases) in the Malir zone, so the supplied "Damlotti Road, Near
+  Askari VI" poster resolves without incorrectly treating every address on Damlotti Road as the
+  same area. Embedding recipes remain unchanged: locality is preserved and ranked structurally.
 - **The homepage hero headline lost the space between its two halves on mobile.** The heading
   splits with `<br className="hidden sm:block" />`, which is hidden below `sm` — with no
   whitespace in the markup either side of it, the two halves ran together as "Teaching jobs in
