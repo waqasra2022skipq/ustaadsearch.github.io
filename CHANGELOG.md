@@ -5,6 +5,17 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Homepage and guide-page CTAs sent a logged-in teacher or institution back to `/auth/register`.**
+  `/auth/login` and `/auth/register` already redirect an authenticated visitor server-side (to
+  their dashboard, or to `/jobs`), but the marketing entry points that link to them — the
+  homepage's "For Teachers"/"For Institutions" cards and the `/guides/teachers` and
+  `/guides/institutions` hero CTAs — never checked auth state, so a logged-in user still saw
+  "Create Profile" / "Get started as an institution" / "Get Started Now" and got bounced through
+  a registration page that isn't for them. Those four CTAs now check `getCurrentUser()` and swap
+  to a "Go to Dashboard" link (`/teacher/dashboard` or `/institution/dashboard`) when the viewer
+  is already signed in under that role.
+
 ### Added
 - **SEO correctness pass, Phases 0–2 of an external audit: crawlable pagination, honest
   JobPosting markup, and index hygiene.** `/jobs` silently ignored `?page=`, always serving page
