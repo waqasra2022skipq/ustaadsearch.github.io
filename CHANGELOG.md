@@ -6,6 +6,68 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **SEO correctness pass, Phases 0–2 of an external audit: crawlable pagination, honest
+  JobPosting markup, and index hygiene.** `/jobs` silently ignored `?page=`, always serving page
+  1 under a canonical hardcoded to the bare `/jobs` URL regardless of filters or page — every
+  paginated and filtered variant collapsed onto one indexed URL. All four listing pages
+  (`/jobs`, `/tutor-jobs`, `/teachers`, `/institutions`) now build a self-referential canonical
+  from an allow-listed, alphabetically-sorted filter subset (`buildCanonicalListingUrl` in
+  `src/lib/seo.ts`), so page 2 canonicalizes to page 2 and a filtered view no longer
+  self-cannibalizes into its unfiltered parent; free-text search params (`query`, `ai_query`,
+  `sort`, `per_page`) get `noindex` instead, since indexing one page per search phrase ever typed
+  serves no one. `Pagination.tsx` (teachers/institutions) and the Load More controls on
+  `JobsList`/`TutorJobsList` now render real `<Link href>` elements alongside their client
+  handlers, since a crawler never fires a `router.push`.
+  `/jobs/[slug]` and `/tutor-jobs/[slug]` had independently hand-rolled JobPosting JSON-LD that
+  had drifted: only the tutor-job builder set `jobLocationType: TELECOMMUTE` for remote listings,
+  both invented an `educationRequirements` credential no listing actually states ("bachelor
+  degree" / "professional certificate", hardcoded), and `job.requirements` was emitted twice
+  under two different property names (`jobBenefits` *and* `qualifications`) despite a requirement
+  not being a benefit. Both routes now share one builder (`src/lib/jsonld/jobPosting.ts`) that
+  drops the fabricated fields, ports TELECOMMUTE handling to `/jobs`, and omits `JobPosting`
+  markup entirely once a listing is closed/filled/expired rather than leaving it indexed as live
+  (that page's `robots` also flips to `index: false`). A tutor job's `hiringOrganization` was
+  unconditionally `"UstaadSearch"` even when the request came from a specific institution; the
+  backend now eager-loads that relation on the detail route and exposes it on `TutorJobResource`
+  so an institution-owned request attributes correctly, falling back to the platform only for a
+  guest/individual poster who has no organization to name. All four detail routes gained a
+  `BreadcrumbList` (`src/components/shared/Breadcrumbs.tsx`) alongside a visible trail — the one
+  place that already said "Breadcrumbs" was a comment sitting over a JS back button.
+  On the index-hygiene side: `TeacherCardResource`/`TeacherResource` never exposed `updated_at`,
+  so the sitemap's `t.updated_at ? ... : new Date()` fallback fired for every one of 2,000+
+  teacher profiles on every regeneration — the entire corpus reported "modified now" forever.
+  Both now expose it (the job listing payload gains it too), the sitemap's static pages dropped
+  their own `new Date()` claim, its `fetchAll` no longer fires every remaining page in one
+  unbounded `Promise.all` (capped concurrency, batched), and one entity type failing outright
+  degrades to an empty list for that type instead of a broken sitemap route. A `profile_score` of
+  70 was reachable with an empty headline and an empty bio — 30 of its 100 points (CV, phone)
+  measure contactability a crawler never sees — so it was the wrong gate for what belongs in the
+  index. `Teacher::scopeSeoEligible()` asks the content question instead (subjects, and a
+  headline or bio, and a city or explicit online mode) and now filters the sitemap; a thin
+  profile stays fully functional, it just isn't handed to Google. Tutor jobs were created with no
+  `expires_at` at all — only `renew()` ever set one — so most were indexed as JobPostings that
+  never expire; every creation path now stamps the same +30-day default `JobPost` already used.
+  `detectSuspiciousContent()`'s duplicate/spam signal ran only on the guest-post path; it's now
+  centralized so institution-authored and AI-imported listings get it too, widened to catch a
+  same-contact repost that reads differently in the title but fingerprints identically in the
+  description, and `is_flagged` now actually excludes a listing from `scopeOpen()` (previously
+  advisory-only despite already being computed) — extended to the `isOpen()` instance method too,
+  since that's what gates whether a non-owner can load the detail page at all, not just the
+  listing scope. Root layout gained `metadataBase` and an env-gated Search Console `verification`
+  tag (unset renders nothing rather than a fabricated code); `/applications`, `/notifications`,
+  and `/reset-password` — reachable and indexable by both robots.txt and meta robots, unlike
+  `/teacher/dashboard` — gained explicit `noindex`; `/institutions/[username]/reviews` gained a
+  self-referential canonical (it carries the full review list against the parent's five-item
+  preview, so it's distinct content, not a duplicate to fold away); the three legacy auth-path
+  redirects in `next.config.ts` changed from 307 to 308 (permanent).
+  Deferred, per the audit's own sequencing: physically splitting the sitemap via
+  `generateSitemaps()` (current inventory is nowhere near the 50k-URL ceiling that forces it, and
+  the audit itself flagged this as premature); the taxonomy foundation and programmatic
+  city/subject landing pages it also proposed, since cities exist only as a hardcoded PHP array
+  with no slugs and grades have a table but no Eloquent model — a schema decision, not a
+  follow-on to this pass.
+
+### Added
 - **An unstated teacher area no longer ranks below a known-but-distant one, and the admin
   shortlist now says how far it had to widen.** Two corrections to the area-proximity work,
   both still behind `RECOMMENDATION_LOCATION_ENABLED`. The classifier scored a teacher with no
