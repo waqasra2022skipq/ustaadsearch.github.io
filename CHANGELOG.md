@@ -6,6 +6,33 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **A logged-in account could not get a tutor job onto the board, and was never told why.**
+  `POST /api/tutor-jobs` is a public route, so the default guard is never switched to `sanctum`
+  and `$request->user()` read null even when the request carried a valid token. Every signed-in
+  poster was therefore handled as a guest: the listing was stored with `user_id` null, unattached
+  to the account that created it; the `tutor-job-post` rate limiter used the guest branch, keyed
+  by IP — and because the Next.js frontend calls this API from its own server, every visitor
+  shares one address, so three posts capped the entire site until the next day; and the guest
+  duplicate heuristic ran on the post. That heuristic flags any listing whose email or phone
+  appeared in the previous 24 hours, and the post form prefills the email from the account, so
+  every post after a poster's first was flagged — while `TutorJob::scopeOpen()` hides a flagged
+  listing from search, digests, recommendations and the sitemap. The API still answered
+  `201 "Tutor job posted successfully"`, so the poster was told it worked and then watched for a
+  listing that was never going to appear. The poster is now resolved through the sanctum guard,
+  a signed-in account posts without a cap, and the spam heuristic is confined to unattributed
+  guest submissions (`TutorJobService::buildTutorJobFromPayload`). The heuristic also no longer
+  flags on title alone: an ordinary title — "Online Tutor" is the most common one on the board —
+  matched a stranger's listing from hours earlier and hid the new one for it, so a repeat contact
+  (email or phone) is now the only duplicate signal. Guests keep their 3/day cap, rekeyed to the
+  contact they posted with rather than the shared frontend IP. The store response carries
+  `pending_review`, so a listing held back for review is never reported as published.
+- **The post form's failures were invisible on mobile.** A rejected post went to `alert()`, which
+  Chrome suppresses for the rest of a page's life once the visitor ticks "prevent this page from
+  creating additional dialogs" — so a second failed attempt looked like the button doing nothing.
+  `PostTutorJobModal` now renders the reason inline above the submit button, reports a thrown
+  request instead of only logging it, and routes success (or a held-for-review notice) through a
+  toast.
+
 - **Homepage and guide-page CTAs sent a logged-in teacher or institution back to `/auth/register`.**
   `/auth/login` and `/auth/register` already redirect an authenticated visitor server-side (to
   their dashboard, or to `/jobs`), but the marketing entry points that link to them — the
