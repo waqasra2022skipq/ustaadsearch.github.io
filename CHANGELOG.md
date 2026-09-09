@@ -6,6 +6,16 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **An institution's phone number, entered at registration, never showed up in the admin table.**
+  `RegisterRequest` validates the phone and `AuthService` writes it to `users.phone` correctly, but
+  `institutions` has its own `phone` column, and the `CreateRoleProfile` listener that
+  auto-provisions the `Institution` row on `UserRegistered` never copied it over — every
+  self-registered institution started with `institutions.phone` null. The institution's own
+  dashboard masked this: `InstitutionProfileService` already falls back to `users.phone` when
+  `institutions.phone` is empty, so the number appeared fine there. Filament's `InstitutionsTable`
+  read `institutions.phone` directly with no such fallback, so the admin table showed blank.
+  `CreateRoleProfile` now copies `$user->phone` onto the new `Institution` record, and
+  `InstitutionsTable` falls back to `user.phone` for existing records created before the fix.
 - **A logged-in account could not get a tutor job onto the board, and was never told why.**
   `POST /api/tutor-jobs` is a public route, so the default guard is never switched to `sanctum`
   and `$request->user()` read null even when the request carried a valid token. Every signed-in
