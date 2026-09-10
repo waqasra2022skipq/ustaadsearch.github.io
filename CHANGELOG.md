@@ -6,6 +6,20 @@ Format: newest entries at the top.
 ---
 
 ### Security
+- **Job descriptions handed out the school's phone number on a page whose sidebar said
+  "Login Required".** Listings are routinely pasted from WhatsApp forwards with the contact block
+  intact — a live `wa.me` link, an email and two phone numbers on one sampled listing — and were
+  rendered raw, so the login gate filtered out only the teachers who did not read carefully.
+  `App\Support\ContactRedactor` now strips phone numbers, emails and messaging links from the
+  description when it is serialised for anyone who is not the owning institution or an admin.
+  Deliberately at serialisation rather than on write: it covers the listings already in the
+  database, and never destroys the original. Nothing is lost to the product — `job_posts` already
+  carries `external_email` / `external_phone` as structured, gate-able columns, and the AI
+  extraction populates them. The matcher is conservative by design: "Salary 25000 - 30000" carries
+  ten digits, and hiding the pay would be a worse failure than missing an oddly formatted number,
+  so a run is only treated as a phone number when it carries the trunk 0 or the +92 country code.
+  Covered by `ContactRedactorTest`.
+
 - **An institution's private notes on a candidate were served to that candidate.**
   `JobApplicationResource` returned `internal_notes` and `tags` unconditionally, and
   `JobApplicationController::myApplications` — the teacher-facing endpoint — uses that same
@@ -16,6 +30,37 @@ Format: newest entries at the top.
   `ApplicationNotesVisibilityTest`.
 
 ### Fixed
+- **Database slugs were rendering straight into the interface.** Cards, chips, match explanations
+  and page titles printed `middle-6-8`, `matric-9-10`, `o-levels` and `primary-1-5`; the job detail
+  page ran `.replace('-', ' ')` over them, which is worse — `Middle 6 8`, `Primary 1 5` — and
+  teacher page titles carried lowercase `mathematics, computer-science, english` into Google. The
+  correct label map already existed and was already used by the filter sidebars; it simply was not
+  applied anywhere else. `subjectLabel()` / `gradeLabel()` now cover every taxonomy call site, and
+  unknown slugs humanize rather than render raw. `humanizeSlugLabel` is kept only for genuinely
+  free-form values — status, mode, gender, institution type. The backend had the same gap:
+  `Str::headline()` over a slug produced "Grade matches: Middle 6 8" one row below chips rendering
+  the same values correctly, so `App\Support\Taxonomy::label()` now backs the recommendation
+  presenters.
+- **A long name squeezed the avatar beside it to a sliver.** Homepage teacher cards rendered the
+  56px avatar at roughly 11px wide because it had no `shrink-0` and sat next to a text block with
+  no `min-w-0`. Same root cause as the dashboard header clipping "Welcome back, ..." to "Welc...":
+  the fixed-size element never shrank and the text always did. Swept both, plus the sidebar and
+  review avatars carrying the same pattern.
+- **Job descriptions collapsed every newline into one paragraph,** so a pasted WhatsApp forward
+  read as an unbroken block. `/tutor-jobs/[slug]` already rendered them with `whitespace-pre-line`;
+  `/jobs/[slug]` now does too.
+- **Five filter labels sat below the AA contrast floor.** "All Countries", "All Cities", "All
+  Subjects", "All Grades" and the verified-source toggle rendered at 2.6:1 on white, where 4.5:1 is
+  the minimum — and these are the only labels those filters carry. All four placeholders came from
+  one component.
+- **Developer shorthand had shipped to users.** "Institution verification not shown" read as an
+  active warning about a school a teacher was about to apply to; it is now "Not yet verified".
+  "Apply directly with the contact" is now "Apply direct", and the italic "* Exact address
+  available after login" — repeated on every tutor card, where it wrapped to two lines and ran
+  longer than the location it qualified — is now a lock icon with a tooltip.
+- **Teacher profiles carried two H1s, one of them identical on all 702 pages.** The mobile sticky
+  header was an `<h1>` reading the literal string "Teacher Profile", competing with the real one
+  below it. It is now a paragraph showing the teacher's name.
 - **Every "Contact via WhatsApp" button in the product was dead.** `TeacherCardResource` exposes
   the teacher's phone number to signed-in viewers, but three of the four queries that feed it had
   drifted without `phone` in their user eager-load — `TeacherService::search()` (which powers both
@@ -59,6 +104,17 @@ Format: newest entries at the top.
   in the sidebar — to "My Applications".
 - **A signed-in teacher got the hirer marketing homepage.** The role-personalised hero already
   existed for institutions; the teacher variant was simply never added.
+
+### Added
+- **A city grid in the footer, on every page.** The 140 `/tutors/{city}/{subject}` and 18
+  `/teaching-jobs/{city}/{subject}` landing pages are good pages — real inventory counts, a typical
+  fee band, internal subject grids, breadcrumbs — and until now the only internal links pointing at
+  any of them were two text links at the bottom of individual job detail pages. A static list of
+  the seven largest cities avoids the per-city stats call the sitemap makes.
+- **`ItemList` structured data on `/jobs` and `/tutor-jobs`.** Both boards shipped zero `ld+json`
+  while the homepage had four and teacher profiles three, so the pattern existed and the job pages
+  had simply never got it. The detail pages already carry full `JobPosting` markup; the listing
+  pages now tell a crawler what they hold and where each entry lives.
 
 ### Changed
 - **WhatsApp is no longer given equal billing beside Apply on job pages.** A green button the same
