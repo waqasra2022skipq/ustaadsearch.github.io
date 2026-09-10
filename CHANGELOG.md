@@ -5,6 +5,58 @@ Format: newest entries at the top.
 
 ---
 
+### Changed
+- **A star average is no longer printed until there are enough reviews to average.** Every rated
+  teacher on the platform showed 5.0 — 5.0 (13), 5.0 (4), 5.0 (2) — and an average that is always
+  the maximum carries no information, which schools work out quickly, at which point the stars stop
+  being read at all. Below three reviews the card now shows the count, or "New to UstaadSearch".
+  The threshold is a single named constant in `src/lib/rating.ts`.
+- **AI profile summaries are no longer written for profiles with nothing in them.** The agent
+  happily produced ninety confident, polite words about a blank profile — "although their formal
+  education and teaching experience details are not currently available… the potential to bring
+  fresh perspectives" — under a badge carrying the same weight as a real summary. It now requires
+  some education, experience, reviews, or a substantive bio plus subjects, and clears any summary
+  written before the guard existed.
+- **Candidate rates are normalised to a monthly figure.** A shortlist put "PKR 4,500/month" beside
+  "PKR 2,000/hour" and asked a school to compare them; 4,500/month reads as the cheaper option
+  every time. Hourly and per-session quotes are now converted for comparison with the teacher's own
+  quote kept underneath, and the sessions-per-week assumption behind the conversion is stated
+  rather than hidden.
+- **Homepage counters agree with the pages they link to.** Both were raw table counts: the hero
+  claimed 2,220 teachers where `/teachers` showed 2,190, and "236 tutor jobs posted" counted every
+  listing ever created — closed, expired and flagged included — against 125 actually open. They are
+  now publicly visible teachers, and open positions across *both* boards, which is also the larger
+  number.
+- **Job-match notifications lead with the job.** Four alerts in the bell all read "A new job matches
+  your profile", with the only distinguishing information — the title — demoted to smaller grey
+  text underneath.
+- **One word per concept.** The same object was called Applicants on the institution dashboard,
+  Proposals in the My Jobs column and Applications in the teacher's account. Applications is now
+  the only word for what teachers send, Matches for what we recommend, Saved for the talent pool —
+  and the Talent Pool empty state names the button that actually exists ("Save") rather than a
+  bookmark icon that does not.
+- **The AI paste box is offered before the nineteen-field form.** The fast path existed on both
+  sides of the marketplace and both routed around it; "Post a new job" now opens the create page
+  with the draft importer first and the manual form beneath it.
+- **The hero search works at phone width.** Three tabs left to wrap stranded the third on its own
+  row with the AI badge below reading as a fourth tab; they are now an even three-up segmented
+  control. The placeholder truncated to "Describe your ideal teacher/t", hiding the entire
+  natural-language promise on the device most visitors hold, so narrow screens get a short form.
+  The Search button is no longer disabled on an empty query — at 50% opacity the primary call to
+  action read as dead on first paint, and pressing it already focuses the input.
+- **Dashboard stat tiles stopped using icons that mean something else.** An eye meant "views" and a
+  bookmark meant "saved" everywhere else in the product, and they were labelling Rejected and
+  Response Rate. Colour is now kept only where it carries meaning, and the response rate says what
+  it counts ("2 of 7 answered") instead of being a percentage with no scale.
+- **Verification says one thing.** Two badges on the same job card gave different definitions of
+  "verified" — one claimed a confirmed email address, the other an UstaadSearch review; the second
+  is correct. The unverified state also renders as a badge rather than bare grey text, because a
+  badge is only worth reading if it is always there. On the teacher's own account, "PENDING" on a
+  qualification now says what is being waited on.
+- **Institution cards show an initials avatar instead of a broken image.** With no logo the card
+  fell back to a remote avatar service and rendered a bare outlined circle. Long names now wrap to
+  two lines rather than truncating mid-word.
+
 ### Security
 - **Job descriptions handed out the school's phone number on a page whose sidebar said
   "Login Required".** Listings are routinely pasted from WhatsApp forwards with the contact block
