@@ -5,7 +5,80 @@ Format: newest entries at the top.
 
 ---
 
+### Security
+- **An institution's private notes on a candidate were served to that candidate.**
+  `JobApplicationResource` returned `internal_notes` and `tags` unconditionally, and
+  `JobApplicationController::myApplications` — the teacher-facing endpoint — uses that same
+  resource, so a school's working note ("asked for too much money, keep as backup") shipped to
+  the applicant in the API response. Both fields are now gated on the requester being
+  institution- or admin-side, and the generic `notes` alias falls back to `status_notes` — the
+  message written *to* the applicant — rather than the private note. Covered by
+  `ApplicationNotesVisibilityTest`.
+
 ### Fixed
+- **Every "Contact via WhatsApp" button in the product was dead.** `TeacherCardResource` exposes
+  the teacher's phone number to signed-in viewers, but three of the four queries that feed it had
+  drifted without `phone` in their user eager-load — `TeacherService::search()` (which powers both
+  the directory and AI search), `getRelatedTeachersStructural()` and `loadTeachersByIds()` (the
+  similar-teachers rail). Only `findByUsername()` still selected it, which is why the button
+  worked on a teacher's profile page and nowhere else: a school could search, find someone, and
+  hit a greyed-out control on every card. The column list is now a single class constant so the
+  next query cannot drift the same way, and `TeacherCard` renders three real destinations instead
+  of a disabled button — a login link for guests, WhatsApp when there is a number, and an email
+  fallback when there is not. Covered by `TeacherCardContactTest`.
+- **Signed-out AI search returned zero results for every visitor.** The homepage hero badges
+  "AI Search Enabled" and offers example queries, but `/teachers`, `/jobs` and `/tutor-jobs` all
+  gated the AI path on `isLoggedIn` and fell through to passing the whole natural-language
+  sentence to a keyword `LIKE` match — which could only ever match nothing. A school owner's
+  first impression was an empty page on a site holding 2,190 teachers. Guests now run the parser
+  and get real structured matches; the embedding-backed *ranking* stays the reason to sign in
+  (`meta.ai_ranking_available`), so a guest query costs at most one Groq parse and usually
+  nothing, since parses are cached for 24h. The AI tab no longer renders as selected while
+  refusing to be used, and a parsed query that over-constrains retries once on subject + city
+  rather than returning an empty page (`meta.relaxed`).
+- **The `ai-search` rate limiter would have crashed on any unauthenticated request.** It read
+  `$request->user()->id` with no null guard. It now resolves the bearer-token user explicitly
+  through the sanctum guard and gives guests their own smaller budget.
+- **Guest rate limits were site-wide rather than per-visitor.** Every API call originates from the
+  Next.js server, so `$request->ip()` is one address for the whole site — the same trap the
+  `tutor-job-post` limiter already worked around. The frontend now forwards the visitor's address
+  and `App\Support\ClientIp` reads it back, for rate-limit keying only.
+- **Apply, Withdraw and WhatsApp all stayed live on closed and expired listings.** The job page
+  renders its CTA block twice (mobile sticky bar and desktop sidebar) and neither copy consulted
+  `job.status`, so a teacher could still act on a listing under a banner saying it was closed.
+  Both call sites now share `JobCtaBlock`, which gates every action on the listing being open.
+- **WhatsApp links on job pages could not resolve.** Three separate phone-normalisation
+  implementations had diverged; the job-page one stripped `+` and spaces without ever converting
+  a leading `0` to `92`, so every locally-formatted number produced a broken `wa.me` link. All
+  three now use `src/lib/whatsapp.ts`.
+- **An unknown `?tab=` value rendered a blank teacher dashboard.** The body was a chain of
+  equality checks with no default branch, so a stale bookmark showed an empty page. Unrecognised
+  tabs now fall back to the overview.
+- **The teacher account menu was missing three of its seven destinations,** including the
+  dashboard itself. Added Dashboard and Settings, and renamed "My Jobs" — which mapped to nothing
+  in the sidebar — to "My Applications".
+- **A signed-in teacher got the hirer marketing homepage.** The role-personalised hero already
+  existed for institutions; the teacher variant was simply never added.
+
+### Changed
+- **WhatsApp is no longer given equal billing beside Apply on job pages.** A green button the same
+  size as the primary action offered a one-tap route out of the product at the moment of
+  conversion, and an application that leaves that way can never come back with a status. It is now
+  secondary styling under the primary Apply.
+- **The teacher applications table now shows the school's message.** `status_notes` already
+  reached the API and was already rendered by `ApplicationCard`, but the dashboard table dropped
+  it — so an accepted application led to an expired job listing and nothing else. The table also
+  marks a closed listing rather than linking to it as though it were live.
+- **The institution dashboard shows real matches instead of a placeholder.** The overview read
+  "Talent recommendations will appear here when available" while the feature ran one click away
+  behind a text link in a table cell. It now renders the top matches for the newest open role, and
+  falls back to a post-a-job CTA when there are none.
+- **The account-free tutor job flow has an address.** `PostTutorJobModal` was modal-only, so the
+  homepage's "Post a Job" button — under a card promising "post jobs without creating an account" —
+  could only link to the browse list. Added `/post-job`, and pointed the CTA at it. The hero's
+  "Post a vacancy free" link keeps its destination, since a school vacancy genuinely needs an
+  account; the copy now says so, and a second line routes parents to the account-free flow.
+
 - **An institution's phone number, entered at registration, never showed up in the admin table.**
   `RegisterRequest` validates the phone and `AuthService` writes it to `users.phone` correctly, but
   `institutions` has its own `phone` column, and the `CreateRoleProfile` listener that
