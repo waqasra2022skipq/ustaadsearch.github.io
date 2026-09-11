@@ -5,7 +5,50 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **The WhatsApp button on every tutor job opened a chat with an invalid number.** A poster types
+  their number the way Pakistanis write it — `03102473847` — and the tutor-job page built the deep
+  link by stripping only `+` and spaces, so `wa.me` received a local number with no country code
+  and answered "not a valid phone number". The teacher saw a dead button at the exact moment they
+  wanted to apply, and the poster never learned why nobody contacted them. The page now uses
+  `src/lib/whatsapp.ts`, which rewrites the trunk `0` to `92`; the number above resolves to
+  `wa.me/923102473847`.
+
+  This was supposed to have been fixed already. The earlier pass consolidated three call sites onto
+  that helper but missed `/tutor-jobs/[slug]`, which kept the old broken line verbatim — and two
+  further copies had drifted since: the public institution page did **no** normalisation at all,
+  and the teacher profile only rewrote a leading `0` when the number was exactly 11 digits, so a
+  number written `+92 310 247 3847` or `0310 247 3847` failed there too. All four now call
+  `waMeHref()`, and it is the only place in the frontend that builds a `wa.me` URL. When a stored
+  number cannot be made dialable the helper returns null and the contact card falls back to the
+  `tel:` Call button rather than rendering a link that goes nowhere. (frontend)
+
 ### Changed
+- **The teacher profile stopped burying the one action it exists to produce.** WhatsApp — the
+  channel this market actually runs on — was an unlabelled icon button the same size as "share",
+  sitting in a row of three. It is now a labelled button and the only coloured control in that row.
+  The login gate was also stated twice on one screen: an uppercase pill in the header *and* a note
+  inside the Location card. It is stated once now, in the card, where the address would be. The AI
+  summary panel was a purple gradient with glow blobs and `shadow-xl` carrying body text at the
+  weakest contrast on the page, and was visually louder than the teacher's own words next to it —
+  it is now a quiet supporting card. And the "Write a Review" form sat **above** the existing
+  reviews, putting the rare action in front of the social proof and pushing thirteen reviews below
+  the fold; it now follows them.
+- **The post-a-tutor-job modal stopped telling posters off before they had done anything.**
+  `At least one contact method (email or phone) is required` rendered in warning amber on a fresh,
+  untouched form, because the condition was simply "both fields empty". It now appears only after
+  someone has actually visited one of the fields, and reads as advice rather than a rebuke. The
+  Email and Phone inputs are the last fields in the form, so focusing one scrolled it directly
+  under the sticky **Post Job Now** bar — they now carry a scroll margin that clears it. The modal
+  also had no `role="dialog"`, no `aria-modal`, no labelled title and no Escape-to-close; it has
+  all four now.
+- **Tutor job extraction keeps the timings.** For home tuition in Pakistan, days and times are the
+  first thing a parent and a tutor match on, and pasting "3 days a week evening after 5pm" lost
+  them entirely — while `tutor_jobs.schedule` existed as a column and the detail page already
+  rendered it. The extractor now pulls the schedule verbatim, the guest post endpoint accepts it,
+  and the modal shows it as an editable field before posting. Where a fee range is given
+  ("budget 15000 to 18000") the extractor takes the lower figure and keeps the full range in the
+  description, so the upper figure is no longer silently dropped.
 - **Every job card on the board said "Not yet verified", including the institutions the admin
   panel showed as verified.** The badge reads `institutions.verified_at` — the admin review — but
   `JobPostService::search()` eager-loaded the institution with an explicit column list that left
