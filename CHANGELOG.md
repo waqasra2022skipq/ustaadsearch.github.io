@@ -6,6 +6,23 @@ Format: newest entries at the top.
 ---
 
 ### Changed
+- **A job you travel to has to say where, and a listing left open closes after a month.** Two of
+  the create-job form's optional fields were findings in their own right. Area optional meant the
+  recommendation engine printed `City-only matching because the job area was not provided` on its
+  own results, without ever linking back to the field that caused it. Expiry optional was worse
+  than it looked: the form sends `expires_at` explicitly as `null` when left blank, and the service
+  tested with `array_key_exists`, so the key was always present and the 30-day default never
+  applied — every such job was stored with **no expiry at all**, staying live and answerable
+  indefinitely. That is the same set of listings that were still offering Apply and Withdraw
+  buttons under an expiry banner.
+
+  Area is now required for on-site and hybrid roles (an online role has no locality to state), and
+  deliberately **not** tied to our own directory: pick an area from the list, or type the locality
+  in your own words. Free text is stored verbatim in `location_text` and matched against known
+  areas opportunistically, so a poster is never blocked by our area list being incomplete. Expiry
+  left blank now lapses the listing one month after posting — `addMonth()`, not `addDays(30)`, so
+  a job posted on 10 September closes on 10 October in every month length. Salary stays optional.
+  Covered by `JobPostAreaAndExpiryTest`.
 - **A star average is no longer printed until there are enough reviews to average.** Every rated
   teacher on the platform showed 5.0 — 5.0 (13), 5.0 (4), 5.0 (2) — and an average that is always
   the maximum carries no information, which schools work out quickly, at which point the stars stop
