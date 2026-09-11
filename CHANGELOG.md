@@ -6,6 +6,21 @@ Format: newest entries at the top.
 ---
 
 ### Changed
+- **Every job card on the board said "Not yet verified", including the institutions the admin
+  panel showed as verified.** The badge reads `institutions.verified_at` — the admin review — but
+  `JobPostService::search()` eager-loaded the institution with an explicit column list that left
+  `verified_at` out of it. The attribute came back null for every row, so `transformListing()`
+  computed `verified => false` across the whole listing, and the one place the review is actually
+  worth something to a teacher never showed it. Every other query in the service (`findBySlug`,
+  the related-jobs and semantic loaders) already selected the column, so the detail page disagreed
+  with the card that led to it. `search()` backs both `/api/jobs` and AI search, so the board and
+  the AI results were affected alike.
+
+  The **Verified source only** filter had the mirror of the same bug: it matched
+  `institution.user.email_verified_at`, so "only show verified institution posts" meant "the owner
+  clicked a link in their email" and could return cards whose own badge called them unverified. It
+  now filters on `institutions.verified_at`, the same signal the badge reads. Covered by
+  `JobListingVerifiedBadgeTest`. (backend)
 - **A job you travel to has to say where, and a listing left open closes after a month.** Two of
   the create-job form's optional fields were findings in their own right. Area optional meant the
   recommendation engine printed `City-only matching because the job area was not provided` on its
