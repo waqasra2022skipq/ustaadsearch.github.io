@@ -23,7 +23,32 @@ Format: newest entries at the top.
   number cannot be made dialable the helper returns null and the contact card falls back to the
   `tel:` Call button rather than rendering a link that goes nowhere. (frontend)
 
+### Added
+- **"Did you get the job?" — the platform can now prove it placed someone.** An application
+  reaching **Accepted** was the last thing the product knew: everything after it happens over
+  WhatsApp or in a staffroom, so whether anyone was actually hired was never written down. That
+  made the placement count — the number case studies are built from, and the number any pricing
+  conversation would start with — simply not exist. A week after an application is accepted the
+  teacher gets one question in the bell and, if they opted in, as a push. Three answers, because
+  "not yet" is a real state in a hiring process that takes weeks and folding it into "no" would
+  undercount placements. The answer is the teacher's alone: the school owns `status`, and the two
+  can legitimately disagree — accepted here, offer declined there. Covered by `PlacementOutcomeTest`.
+  Requires a migration (three nullable columns on `job_applications`).
+
 ### Changed
+- **A teacher can finally see where they stand on the job page itself.** Being shortlisted is the
+  best news short of an offer, and the job page showed no trace of it — the most prominent control
+  was a large red **Withdraw** button, under a banner saying the listing had expired. The page now
+  leads with the application's own state ("You have been shortlisted for this role"), which stays
+  visible after the listing closes because it stays true. Withdraw is demoted to a quiet text link
+  and asks before acting: it is irreversible, it was one tap, and for a teacher who has applied it
+  is the rarest thing they want to do there.
+- **Applications nobody ever answered stop being reported as "Pending".** Five of seven sitting at
+  Pending — one since February — teaches a teacher the tracker is fiction, and the response rate
+  silently counted every one of them as an answer that might still be coming. A pending application
+  untouched for 30 days now reads **No reply** and is excluded from the response-rate denominator,
+  which is reported alongside it ("2 of 5 answered · 3 no reply"). Derived from the timestamp
+  rather than stored as a status, so no row is rewritten and a school replying late still works.
 - **The teacher profile stopped burying the one action it exists to produce.** WhatsApp — the
   channel this market actually runs on — was an unlabelled icon button the same size as "share",
   sitting in a row of three. It is now a labelled button and the only coloured control in that row.
