@@ -24,6 +24,55 @@ Format: newest entries at the top.
   `tel:` Call button rather than rendering a link that goes nowhere. (frontend)
 
 ### Added
+- **Analytics leads with a diagnosis instead of four tiles.** The page reported "44 views,
+  1 application, 2.3%" and stopped — while the reasons sat one tab away the whole time. It now
+  opens with a sentence and, under it, only the problems that actually apply: an incomplete
+  profile, listings with no salary, listings with no area. Each links to the screen that fixes it.
+  Deliberately no "jobs with a salary get N× more applications" — that would have to be measured
+  before it can be claimed.
+- **Posting a third role asks the school to say who it is.** Nothing stopped a verified school
+  running eight live listings against a 0% profile, which leaves every teacher weighing them a name,
+  a city and nothing else — precisely why they message the number in the description instead of
+  applying. The first two posts stay unblocked on purpose: demanding a complete profile at signup
+  loses the school before it has seen anything work, while asking on the third asks someone already
+  using the product. Description and curriculum only; curriculum is what a Pakistani teacher screens
+  on, since Matric, O-Level, IGCSE and Cambridge are different jobs. Covered by
+  `JobPostProfileGateTest`.
+
+### Changed
+- **A job that nobody applied to is no longer "Best performing".** The list sorted every job
+  descending and took five with no filter for having any applications at all, so a listing at 0.0%
+  with zero applications ranked second — and because "Needs attention" sorts the same collection
+  ascending, that identical job also ranked first there. One listing, presented on one screen as
+  both a success and a problem.
+- **A missing salary stopped being the largest thing on a job page.** 57% of listings have none, so
+  for most of them the most prominent element was the absence of the one thing the teacher came
+  for. Where there is no salary the slot now carries what we always know — type, mode, shift,
+  locality — with the gap noted quietly underneath.
+- **Job alerts moved out of the danger zone.** The push toggle sat in Account Settings between
+  Change Password and Delete My Account, under "Manage sensitive actions related to your account".
+  Teachers now find it beside Availability, the other "how do you want to hear about work" control;
+  institutions get it above the account panel rather than inside it.
+- **Currency is a select.** A free-text three-letter box on a Pakistan-first product accepted any
+  typo as the currency a salary was quoted in, and nothing downstream could tell.
+- **Each homepage section is written for one reader.** The hero personalises by role; one screen
+  down, "How UstaadSearch Works" told everyone to "Build your professional teacher profile" and
+  "Apply & Get Hired" — including a signed-in school. It now has a hirer variant. That section was
+  also ~900px of generic copy on a phone before a single real teacher or job appeared, on a page
+  already 6,489px tall: it renders as a compact three-across strip on mobile, and the featured
+  teachers and jobs come before it. Proof outperforms process copy.
+- **One primary button colour instead of five.** Indigo, teal-green, red-pink, blue and black were
+  all being used for "this is the action", so the eye had no way to learn which one meant it.
+  Indigo wins — it is already the PWA theme colour. Audience colour moves to the card's top rule and
+  icon, where it says who the card is for. Semantic colour is untouched: green still confirms, red
+  still destroys, amber still warns.
+- **One city control across all three boards.** `/jobs` had a searchable dropdown; `/teachers` and
+  `/tutor-jobs` asked people to type the city by hand, which made "Lahore", "lahore" and "Lhr"
+  three different searches against the same city. A filter that silently returns nothing because of
+  a typo is worse than no filter. *(Unifying the rest of the three filter designs — radios vs
+  dropdowns vs pills — is a visual change to two pages and is left for a deliberate design pass.)*
+
+### Added
 - **"Did you get the job?" — the platform can now prove it placed someone.** An application
   reaching **Accepted** was the last thing the product knew: everything after it happens over
   WhatsApp or in a staffroom, so whether anyone was actually hired was never written down. That
