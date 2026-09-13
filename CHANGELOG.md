@@ -18,9 +18,8 @@ Format: newest entries at the top.
   received a name and a link to an empty page: the same complaint already recorded against thin
   institution profiles, pointing the other way.
 
-  New `App\Support\TeacherReadiness` is the single bar for both routes — subjects, grades, city,
-  a mobile number, and *either* a CV *or* a headline, an about section and one education or work
-  entry. The CV is not strictly required because only 30% of the corpus has one; the written
+  New `App\Support\TeacherReadiness` is the single bar for both routes — subjects, city, a mobile
+  number, and *either* a CV *or* a headline, an about section and one education or work entry. The CV is not strictly required because only 30% of the corpus has one; the written
   fallback accepts education on its own, since a fresh graduate has a degree and no teaching
   history and is exactly who a CV rule would lock out. It is also deliberately **not** a
   percentage of `profile_score`: that score gives 5 free points for a NOT NULL `mode` and only 5
@@ -41,6 +40,17 @@ Format: newest entries at the top.
   reading. A CV also clears most of the list by itself. Since parsing is queued, the panel watches
   `cv_parsed_at` / `cv_parse_failed_at` (added for this) and stops after ~30s rather than spinning.
 
+  **Grades are deliberately not on that list**, though the gate this replaces required them. They
+  are a ranking signal, not an evaluability one, and the codebase already said so: `scopeRankable()`
+  — whether a teacher can be shortlisted *at all* — is `subjects OR cv_path` and never mentions
+  grades, nor does `scopeSeoEligible()`. So a teacher with none is already being shown to schools in
+  shortlists, digests and the directory, and refusing their application while the recommender
+  promotes them was incoherent. What missing grades actually cost is `0.15` of
+  `JobStructuralScorer`'s weighting against a grade-specific job — about 5% of the blended score —
+  which is a price the teacher pays and is theirs to accept. Only 17 teachers were blocked by grades
+  and nothing else; it was never a common refusal, just a wrong one. The profile score card and the
+  reminder email still ask for them, which is where a nudge belongs.
+
   `teachers:send-profile-reminders` now chases on the same bar, so the email arrives before the
   wall instead of explaining it afterwards. Its 60-day age window is **left as it was**: most of
   the 1,300 registered well before that, and mailing long-dormant addresses from a transactional
@@ -48,6 +58,13 @@ Format: newest entries at the top.
   `PROFILE_REMINDER_MAX_AGE_DAYS` rather than by this change quietly widening the audience.
 
 ### Fixed
+- **The profile gate offered a CV upload to teachers who already had one, and called a 90% profile
+  "nearly empty".** Both were caught the first time the panel met a real account. Its list is now
+  keyed rather than a bag of sentences, so it offers the CV dropzone only when the CV is genuinely
+  the gap — in which case it still fills most of the rest — and otherwise points at the specific
+  fields. The opening line scales too: telling someone with a CV, a degree, two jobs and a city on
+  file that their profile would arrive "nearly empty" was untrue, and it was said at the exact
+  moment they were trying to apply.
 - **"Upload your CV" in the apply modal led to a page that does not exist.** It pointed at
   `/teacher/dashboard/profile`; the real path is `/teacher/dashboard?tab=profile`. The one teacher
   in the flow who had already noticed their CV was missing was sent to a 404.
