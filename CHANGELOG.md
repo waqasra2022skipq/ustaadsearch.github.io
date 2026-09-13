@@ -5,6 +5,53 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **A teacher now has to be worth reading before they can reach a job poster.** Of 2,144 teachers,
+  844 pass `Teacher::scopeRankable()` — the other **1,300 have neither subjects nor a CV and can
+  never appear in any shortlist or recommendation email at all**. 30% have a CV, 37% a city (worth
+  up to 30% of `JobStructuralScorer`'s weighting on an onsite job), 10% a single experience row.
+
+  The in-platform apply path had a gate since February (subjects + grades). The **external and
+  tutor-job paths, where most of this marketplace actually converts, had none** — and both build
+  the teacher's outgoing message as "My teacher profile: {url}" plus "My CV: {url}", where
+  `CvAccessService` returns null without a CV and the line is silently dropped. So the poster
+  received a name and a link to an empty page: the same complaint already recorded against thin
+  institution profiles, pointing the other way.
+
+  New `App\Support\TeacherReadiness` is the single bar for both routes — subjects, grades, city,
+  a mobile number, and *either* a CV *or* a headline, an about section and one education or work
+  entry. The CV is not strictly required because only 30% of the corpus has one; the written
+  fallback accepts education on its own, since a fresh graduate has a degree and no teaching
+  history and is exactly who a CV rule would lock out. It is also deliberately **not** a
+  percentage of `profile_score`: that score gives 5 free points for a NOT NULL `mode` and only 5
+  for a city, so its weights and the recommender's disagree, and "you are at 55%" is not something
+  a teacher can act on. The gate names fields.
+
+  Enforced server-side, not in React — `JobPostController::show()` withholds `external_email` /
+  `external_phone` and `TutorJobResource` withholds `email` / `phone` / `address`, so the number is
+  not one devtools panel away. A signed-out visitor gets nothing either, which is what the frontend
+  already showed them and what stops a teacher logging out to read it. Anyone who is not a teacher
+  keeps the access they had: the bar is about the person applying. Covered by
+  `TeacherApplicationGateTest`, which is also the first test this repo has had over
+  `POST /jobs/{slug}/apply`.
+
+  The teacher sees `ReadinessGate` in place of the contact controls, listing only what is actually
+  missing, with the CV upload **inline on the job page** rather than a link to the dashboard — the
+  gate fires on a first contact attempt and sending someone away loses the listing they were
+  reading. A CV also clears most of the list by itself. Since parsing is queued, the panel watches
+  `cv_parsed_at` / `cv_parse_failed_at` (added for this) and stops after ~30s rather than spinning.
+
+  `teachers:send-profile-reminders` now chases on the same bar, so the email arrives before the
+  wall instead of explaining it afterwards. Its 60-day age window is **left as it was**: most of
+  the 1,300 registered well before that, and mailing long-dormant addresses from a transactional
+  domain is a sending-reputation decision, so it is made by raising
+  `PROFILE_REMINDER_MAX_AGE_DAYS` rather than by this change quietly widening the audience.
+
+### Fixed
+- **"Upload your CV" in the apply modal led to a page that does not exist.** It pointed at
+  `/teacher/dashboard/profile`; the real path is `/teacher/dashboard?tab=profile`. The one teacher
+  in the flow who had already noticed their CV was missing was sent to a 404.
+
 ### Fixed
 - **The WhatsApp button on every tutor job opened a chat with an invalid number.** A poster types
   their number the way Pakistanis write it — `03102473847` — and the tutor-job page built the deep
