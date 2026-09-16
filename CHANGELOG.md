@@ -6,6 +6,13 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **The status select on a closed job no longer snaps shut.** `canTransitionStatus()` refuses to
+  move a closed job or tutor job anywhere, but the edit forms still offered every status and saved
+  on change: picking one fired the PATCH, set `disabled` on the select (which closes an open native
+  dropdown), and reverted with "Cannot transition from 'closed' to 'filled'". The forms now track
+  the last saved status and, once it is closed, disable every other option and say to clone the
+  listing instead; the select is no longer disabled while a save is in flight (a second change is
+  ignored instead). The My Jobs and My Tutor Jobs table selects disable the same options.
 - **AI-imported tutor job drafts now keep their email and phone.** The extraction prompt tells the
   model to leave a job's own `email`/`phone` as `""` when it shares the post's contact, but
   `normalizeJob()` fell back with `Arr::get($job, 'phone', $shared)` — the key exists, so the
