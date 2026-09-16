@@ -5,6 +5,14 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Long addresses no longer push the public institution page off-screen.** Institutions paste
+  social links into the headquarters/campus address fields; an unbroken URL gave the grid columns
+  a min-content width wider than the viewport, so on mobile the whole page scrolled sideways and
+  the cards overflowed. Both page columns and the About cards now get `min-w-0`, addresses wrap
+  anywhere (keeping their line breaks), and the website links truncate inside a span — `truncate`
+  on the flex parent never applied to the bare text node.
+
 ### Added
 - **A teacher now has to be worth reading before they can reach a job poster.** Of 2,144 teachers,
   844 pass `Teacher::scopeRankable()` — the other **1,300 have neither subjects nor a CV and can
