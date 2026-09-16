@@ -6,6 +6,10 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **"New to UstaadSearch" is gone from teacher cards and star ratings.** A teacher with no
+  reviews now shows nothing where the rating sits, on every screen size. `ratingDisplay()` returns
+  an empty label for zero reviews; `TeacherCard` drops the rating block and `StarRating` renders
+  nothing. Teachers with 1–2 reviews still show the count, and 3+ still show the average.
 - **Long addresses no longer push the public institution page off-screen.** Institutions paste
   social links into the headquarters/campus address fields; an unbroken URL gave the grid columns
   a min-content width wider than the viewport, so on mobile the whole page scrolled sideways and
