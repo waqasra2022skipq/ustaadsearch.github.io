@@ -6,6 +6,13 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **AI-imported tutor job drafts now keep their email and phone.** The extraction prompt tells the
+  model to leave a job's own `email`/`phone` as `""` when it shares the post's contact, but
+  `normalizeJob()` fell back with `Arr::get($job, 'phone', $shared)` — the key exists, so the
+  default never fired and the shared contact was dropped from every draft. Empty values now fall
+  back to the post's contact, and if the text has none,
+  `TutorJobService::createImportedDraftForInstitution()` uses the institution's phone (else the
+  account's) and the account email.
 - **"New to UstaadSearch" is gone from teacher cards and star ratings.** A teacher with no
   reviews now shows nothing where the rating sits, on every screen size. `ratingDisplay()` returns
   an empty label for zero reviews; `TeacherCard` drops the rating block and `StarRating` renders
