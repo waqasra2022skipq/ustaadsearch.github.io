@@ -6,6 +6,11 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **Tutor job AI extraction now requests the highest amount in a pay range.** The public
+  "Post a Tutor Job" extraction prompt previously instructed the AI to select the lower figure.
+  It now requests the upper figure for budget, fee, pay, or salary ranges: `16 to 18k`, `16k-18k`,
+  and `16,000 to 18,000` all map to `fee: 18000`, while the full original range stays in the
+  description. Single amounts and missing fees retain their existing handling. (backend)
 - **The status select on a closed job no longer snaps shut.** `canTransitionStatus()` refuses to
   move a closed job or tutor job anywhere, but the edit forms still offered every status and saved
   on change: picking one fired the PATCH, set `disabled` on the select (which closes an open native
