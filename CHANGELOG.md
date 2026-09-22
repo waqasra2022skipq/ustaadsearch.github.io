@@ -5,6 +5,12 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **City is collected during registration.** The signup form now requires a city before
+  creating an account, permits a custom city when it is not in the suggestions, stores
+  that city in the unique shared city list for future signups, and copies it to teacher
+  and institution profiles.
+
 ### Fixed
 - **Tutor job AI extraction now requests the highest amount in a pay range.** The public
   "Post a Tutor Job" extraction prompt previously instructed the AI to select the lower figure.
