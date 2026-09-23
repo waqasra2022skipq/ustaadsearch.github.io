@@ -5,6 +5,19 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Hardened the Phase 1 nightly teacher-summary pipeline for production.** Groq request
+  accounting now counts successful and failed provider attempts without charging Gemini-first
+  summaries, and the circuit breaker trips only for rate-limit/overload failures and resets after
+  a successful recovery or expiry. Summary bookkeeping no longer changes a teacher's normal
+  `updated_at`, stale queued dirty versions are rejected before an AI call, and conditional
+  writes report conflicts instead of claiming a summary was generated. Summary eligibility now
+  lives in one reusable helper, duplicate jobs are unique per teacher and dirty version, deleted
+  teachers clean up embeddings without dispatching an unusable job, and the nightly schedule runs
+  explicitly at 01:00 Asia/Karachi. Regression coverage includes related-profile dirtiness,
+  backfill idempotency and limits, race handling, provider fallback, circuit recovery, and
+  budget accounting.
+
 ### Changed
 - **Teacher AI summaries are now generated on a controlled nightly cycle instead of during
   every profile save.** The summary pipeline used to dispatch `GenerateTeacherAiSummaryJob`
