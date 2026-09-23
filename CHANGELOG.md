@@ -6,6 +6,16 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **Hardened the nightly teacher-summary pipeline against version races and provider recovery
+  edge cases.** Every summary-source edit now advances `ai_summary_dirty_at`, including edits
+  that happen while an older AI request is in flight, so an old job cannot mark a newer profile
+  clean. Groq circuit success handling no longer closes an active cooldown, fallback model names
+  are preserved when Groq is unavailable, and Groq-primary budget reservations are not double
+  counted by provider events. The summary prompt no longer includes a separately tracked user
+  name or infers that a teacher is new from having no reviews. Restoring a teacher re-queues its
+  embedding when it has searchable content. Added regression coverage for these races, prompt
+  rules, fallback selection, restore behavior, and circuit recovery.
+
 - **Hardened the Phase 1 nightly teacher-summary pipeline for production.** Groq request
   accounting now counts successful and failed provider attempts without charging Gemini-first
   summaries, and the circuit breaker trips only for rate-limit/overload failures and resets after
