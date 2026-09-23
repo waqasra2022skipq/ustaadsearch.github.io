@@ -5,6 +5,46 @@ Format: newest entries at the top.
 
 ---
 
+### Changed
+- **Teacher AI summaries are now generated on a controlled nightly cycle instead of during
+  every profile save.** The summary pipeline used to dispatch `GenerateTeacherAiSummaryJob`
+  from the normal teacher, education, experience, and review update path, which meant a teacher
+  could trigger repeated AI work while editing a single profile or during CV hydration. That
+  behavior is now replaced by explicit summary freshness tracking (`ai_summary_dirty_at` and
+  `ai_summary_processed_at`) so summaries are refreshed only when the underlying profile data
+  actually changes. This keeps the teacher profile editor responsive, avoids unnecessary queue
+  churn from small text edits, and gives the nightly summary command a deterministic set of
+  teachers to process.
+- **Summary regeneration is now deliberate, not implicit.** We now distinguish between
+  summary-relevant changes, embedding-relevant changes, and unrelated saves. Summary-relevant
+  edits to fields like `headline`, `about`, `subjects`, `grades`, `mode`, and `exp_years` mark
+  the teacher dirty; embedding-related edits still refresh the semantic search vector; unrelated
+  changes like view tracking or a stale username save do not trigger AI work. This reduces
+  duplicate provider calls and stops the same teacher from being scheduled multiple times during
+  a single profile update sequence.
+- **CV hydration is now idempotent and single-dispatch in the final state.** A CV import can
+  create several education and experience rows while updating the teacher in one pass. Previously,
+  each row and each teacher save could fan out into summary and embedding jobs. The hydration flow
+  now suppresses those observer-driven writes during the transaction, then performs one final dirty
+  mark and one final embedding dispatch after the profile is fully hydrated. This is the
+  difference between a burst of repeated downstream jobs and one clean refresh.
+- **The nightly backfill now processes dirty summaries and skips permanently incomplete profiles
+  without looping forever.** The backfill command checks explicit summary freshness timestamps
+  instead of `ai_summary IS NULL`, and it marks insufficient profiles as processed without calling
+  the AI provider. That prevents a teacher with no useful data from being revisited every night
+  forever while still allowing a future profile update to re-trigger eligibility.
+- **Groq usage is centrally budgeted and protected by a shared circuit breaker.** Teacher
+  summaries now prefer Gemini first with Groq as fallback, while other Groq-backed features use a
+  shared rate budget and a temporary circuit that opens when a rate-limit response occurs. The
+  goal is to avoid repeated 429s from one provider, to keep Groq capacity available for the most
+  important operations, and to let critical onboarding tasks fail over gracefully instead of
+  stopping the entire pipeline.
+- **Summary generation is now version-aware to prevent race conditions.** Each queued summary
+  job records the exact `ai_summary_dirty_at` value it was generated from and only advances the
+  processed timestamp for that same dirty version. If the teacher changes again while the AI call
+  is in flight, the newer dirty state remains visible and gets picked up on the next pass. This
+  prevents older jobs from accidentally marking a newer edit as already processed.
+
 ### Added
 - **City is collected during registration.** The signup form now requires a city before
   creating an account, permits a custom city when it is not in the suggestions, stores
