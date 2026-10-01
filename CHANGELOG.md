@@ -5,7 +5,34 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Country → City location picker for registration and profile edits.** Teachers and
+  institutions now pick a country (Pakistan by default) and then search a city from a new
+  `places` gazetteer: about 160k towns worldwide, from GeoNames `cities1000` (CC BY 4.0, credited
+  in the footer).
+  - **Why GeoNames:** checked against the cities already on profiles, it matched about 97% of
+    them and covers Pakistani towns the dr5hn dataset lacks (Muzaffarabad, Vehari, Rawalakot,
+    Hunza).
+  - **Pakistan gaps:** `PlaceSeeder` adds the towns GeoNames misses (Taxila, Wah Cantt, Tarbela
+    Dam, Banigala, …).
+  - **Towns not in the list:** can still be entered via "My city isn't listed". The backend first
+    matches the name, including aliases like "Lhr" → Lahore. Otherwise it files it as a pending
+    place, which is stored on the profile but never offered in the picker or given a landing page.
+    Admins approve, merge or reject pending places in the new Filament **Places** screen. Merging
+    moves the affected profiles' city.
+  - **New endpoints:** `GET /api/countries` and `GET /api/places?country=&q=`.
+  - **New command:** `php artisan places:import` (idempotent; run once per environment).
+  - **Profiles:** `teachers` and `institutions` gain a nullable `place_id`. The denormalised
+    `city` and `teachers.country` strings are still written, so matching, recommendations and
+    areas are unchanged.
+  - **Unchanged:** the curated `cities` table, landing pages and sitemap.
+
 ### Fixed
+- **Registration no longer creates public cities from free text.** Previously every typo,
+  foreign city or spam value became an active `cities` row with its own landing page and sitemap
+  entry. Junk input ("...", links, arrays) is now a 422 instead of a new city or a 500.
+  `SearchableSelect` is now keyboard-focusable, with combobox/listbox ARIA wiring.
+
 - **Hardened the nightly teacher-summary pipeline against version races and provider recovery
   edge cases.** Every summary-source edit now advances `ai_summary_dirty_at`, including edits
   that happen while an older AI request is in flight, so an old job cannot mark a newer profile
