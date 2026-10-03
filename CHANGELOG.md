@@ -5,6 +5,11 @@ Format: newest entries at the top.
 
 ---
 
+### Changed
+- **Apply messages now include the job link.** The pre-filled WhatsApp and email message a teacher
+  sends from a tutor job (`/tutor-jobs/[slug]`) or an external job (`/jobs/[slug]`) now carries a
+  "Job link:" line, so the academy or school can open the listing they are being applied to.
+
 ### Added
 - **Country → City location picker for registration and profile edits.** Teachers and
   institutions now pick a country (Pakistan by default) and then search a city from a new
