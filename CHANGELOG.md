@@ -5,6 +5,56 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Payments foundation and voluntary "Support UstaadSearch" checkout (behind flags, off by
+  default).** Logged-in users can make a one-time PKR contribution through a hosted checkout.
+  The goal is to prove that payments can be taken and confirmed reliably before any feature is
+  ever paid. Contributing changes nothing about an account.
+  - **Not live yet:** `PayFastClient` is a stub that throws until merchant onboarding provides
+    sandbox docs. Keep `PAYMENTS_ENABLED` (Laravel) and `NEXT_PUBLIC_PAYMENTS_ENABLED`
+    (Next.js) false until the client is implemented and tested against the sandbox.
+  - **Tables:**
+    - `payments`: one row per checkout. Integer paisa, a ULID `public_id`, and
+      `unique(provider, provider_ref)`.
+    - `payment_events`: every provider callback, stored before it is acted on, including ones
+      with a bad signature.
+  - **How a payment gets confirmed:** only `PaymentService::refresh()` changes a status, and it
+    asks the provider's status API under a row lock. Three things call it: the callback, the
+    status endpoint the return page polls, and `payments:reconcile`.
+    - A callback body is never trusted.
+    - Landing on the return URL proves nothing.
+    - A replayed callback can't send a second receipt.
+    - A provider-reported amount that differs from ours goes to `review`, never `paid`.
+  - **New endpoints:**
+    - `POST /api/payments/support`
+    - `GET /api/payments/{publicId}`
+    - `GET /api/me/payments`
+    - `POST /api/payments/webhooks/payfast` (signature-authenticated, no Sanctum)
+  - **New command:** `payments:reconcile`, every 10 minutes. It checks pending payments that
+    may have missed their callback and expires abandoned checkouts. It never expires a payment
+    it couldn't check.
+  - **Admin:** a read-only Filament **Payments** screen with a paid total, a badge for
+    payments held for review, the callbacks behind each payment, and three actions: "Check with
+    provider", "Mark refunded" (for refunds made in the provider dashboard) and "Resolve
+    review".
+  - **Monitoring:** `system:health-check` alerts on payments held for review, payments still
+    pending after 2h, and callbacks with invalid signatures.
+  - **Receipt email:** `PaymentReceiptMail`, sent once on confirmation. It is transactional, so
+    it uses MailBudget's reserve.
+  - **Support prompts:** a dismissible prompt appears after an institution posts a job or a
+    tutor job, after a tutor job is posted live from `/post-job` or `/tutor-jobs`, and after a
+    teacher applies. It is shown at most once per session, then stays hidden for 14 days after a
+    dismissal and 90 days after a payment. Impressions and clicks go to Clarity; checkouts per
+    prompt are in the `payments.source` column.
+  - **New pages:** `/support-us/return` (payment status, polled from the API) and
+    `/refund-policy` (a draft like `/terms`; payment providers check for one during onboarding).
+
+### Changed
+- **`/support-us`:** when payments are enabled, the personal Easypaisa, SadaPay and IBAN
+  details move under a collapsed "Other ways to support (manual transfer)" section. "Donate"
+  wording and the "100% of these funds…" claim are gone in both modes. Terms §7 now mentions
+  voluntary contributions and links the refund policy.
+
 ### Changed
 - **Apply messages now include the job link.** The pre-filled WhatsApp and email message a teacher
   sends from a tutor job (`/tutor-jobs/[slug]`) or an external job (`/jobs/[slug]`) now carries a
