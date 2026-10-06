@@ -50,6 +50,12 @@ Format: newest entries at the top.
     `/refund-policy` (a draft like `/terms`; payment providers check for one during onboarding).
 
 ### Changed
+- **Site now shows what payment providers check during onboarding.** New `/services` (the eight
+  things UstaadSearch does) and `/service-policy` pages. The office address and phone number
+  (`src/config/business.ts`) appear in the footer and on `/contact`. Privacy, terms and refund
+  pages are dated, the draft banners are gone, and the two inline placeholders are filled:
+  governing law is Pakistan, and data retention is worded to match soft-deleted accounts. These
+  pages have not been reviewed by a lawyer.
 - **`/support-us`:** when payments are enabled, the personal Easypaisa, SadaPay and IBAN
   details move under a collapsed "Other ways to support (manual transfer)" section. "Donate"
   wording and the "100% of these funds…" claim are gone in both modes. Terms §7 now mentions
