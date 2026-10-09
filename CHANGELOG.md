@@ -5,6 +5,42 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Tutor job fee ranges (`fee_max`).** A post like "Budget 15000 to 18000" now keeps both
+  ends. Before, there was only one `fee` column and the extractor was told to keep the upper
+  amount, which the post-job form then labelled **Min Fee**. That published the parent's floor
+  20% above what they wrote.
+  - New nullable `tutor_jobs.fee_max` column. `fee` is always the floor, or the single amount.
+  - Both AI extractors (the post-job paste and the institution bulk import) map low→`fee`
+    and high→`fee_max`.
+  - On save, a reversed range is swapped, and an equal or top-only range becomes a single
+    `fee`.
+  - The `min_fee` search filter now counts the top of a range.
+  - Cards, the institution table and the JobPosting `baseSalary` show the range.
+  - Max fee field added to the post-job modal, the institution tutor-job form and Filament.
+    In the modal it replaces the Currency box, which `POST /api/tutor-jobs` ignored because
+    it always stores PKR.
+  - **Not backfilled:** tutor jobs extracted between 21 Sept and this change store the upper
+    amount as `fee`. Their descriptions still contain the original range.
+
+### Fixed
+- **WhatsApp boilerplate no longer reaches JobPosting `streetAddress`.** On `/jobs` the
+  address comes from the institution record, and some institution records held a forwarded
+  "Follow our channel on WhatsApp: https://…" blurb.
+  - `safeStreetAddress()` now drops any address over 120 characters, or containing a link or
+    an emoji, and falls back to the city. Real multi-line addresses are kept, flattened to one
+    line. Applies to both job types and the institution page.
+  - The institution profile form now rejects a link in `address` or `campus_address`.
+- **Post-job modal accessibility and labels.**
+  - Every field now has a paired `id`/`htmlFor`. Before, 1 of 19 did.
+  - The two radio groups are now named groups.
+  - Subject and grade chips show labels instead of slugs (`middle-6-8` → Middle (Grade 6–8)).
+  - Chip remove buttons have an accessible name.
+- **Teacher profile `<h1>` is just the name.** The verification badges were inside it, so the
+  heading read "Asma Batool Email Confirmed".
+- **The `all` subject/grade chip is hidden on job and tutor-job cards.** It is the extractor's
+  no-preference fallback and told the reader nothing.
+
 ### Changed
 - **Apply messages now include the job link.** The pre-filled WhatsApp and email message a teacher
   sends from a tutor job (`/tutor-jobs/[slug]`) or an external job (`/jobs/[slug]`) now carries a
