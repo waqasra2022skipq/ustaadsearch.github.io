@@ -5,6 +5,25 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Contacts hidden in public institution descriptions.** An institution's About text was the
+  one public free-text field with no redaction, and one academy used it to pull teachers into
+  its own WhatsApp group.
+  - `ContactRedactor` now also runs on `GET /api/institutions` and
+    `GET /api/institutions/{username}`.
+  - It also runs on the open jobs embedded in the institution page, which were returning raw
+    job descriptions.
+  - The owner's `/me/institution` still shows the original, and the stored text is never
+    changed.
+- **`ContactRedactor` catches WhatsApp channel and group links.** It handled `wa.me` and
+  `api.whatsapp.com` but missed `whatsapp.com/channel/…` and `chat.whatsapp.com/…` invites,
+  so the "Follow our channel" boilerplate survived in ingested job descriptions.
+- **JobPosting `streetAddress` is left out when it would just repeat the city.** Before, the
+  fallback put the city in it on almost every posting. `/jobs` now uses the institution's
+  `campus_address` first; the job detail API now includes it.
+- **Post-job modal:** the close button and the requirement remove button now have accessible
+  names.
+
 ### Added
 - **Tutor job fee ranges (`fee_max`).** A post like "Budget 15000 to 18000" now keeps both
   ends. Before, there was only one `fee` column and the extractor was told to keep the upper
