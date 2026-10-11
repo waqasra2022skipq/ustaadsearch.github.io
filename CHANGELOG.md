@@ -6,6 +6,23 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **Blocking a user now logs them out everywhere.** Login was the only place that checked
+  `is_blocked`, and Sanctum tokens never expire. So blocking someone in Filament hid their
+  profile but left any existing session working: they could still post, apply and review.
+  `User` now deletes every token when `is_blocked` turns on, whichever way they're blocked.
+- **Relative URLs work in tests.** `.env`'s `APP_URL` has no scheme, which broke relative test
+  URLs, so `phpunit.xml` now pins `APP_URL=http://localhost`.
+
+### Added
+- **`AuthFlowTest`** covers login (case-insensitive email), wrong passwords, blocked users,
+  revoking sessions on block, logout of one session, password reset, and email verification.
+  It checks that an unsigned verification link is rejected, since a verified address is what
+  `JobClaimService` trusts to hand over external jobs.
+- **`InstitutionOwnershipTest`** checks that one institution can't list, export, re-status or
+  annotate another's applicants, or edit, close, renew or delete its jobs. It also covers
+  reaching an application through a different job, and teachers using institution routes.
+
+### Fixed
 - **Job invitations notify the teacher again.** Since Aug 11, `TeacherInvitedNotification`
   overrode `via()` with `['web_push']`, which is not a registered channel. So every new invite
   failed in the queue (`Driver [web_push] not supported`) and the teacher got no in-app
