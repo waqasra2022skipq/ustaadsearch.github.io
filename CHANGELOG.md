@@ -6,6 +6,25 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **Job invitations notify the teacher again.** Since Aug 11, `TeacherInvitedNotification`
+  overrode `via()` with `['web_push']`, which is not a registered channel. So every new invite
+  failed in the queue (`Driver [web_push] not supported`) and the teacher got no in-app
+  notification and no push.
+  - The override is gone, so the `SendsWebPush` trait's `via()` (database, plus push for
+    subscribers) applies again.
+  - Removed the unused `$notificationChannels` parameter from `InvitationService::recordInvite`.
+    `TeacherInvitationMail` and its view are now unused.
+  - New regression test: `TeacherInvitedNotificationTest`.
+- **The test suite no longer depends on the developer's `.env`.** `phpunit.xml` pins
+  `RECOMMENDATION_LOCATION_ENABLED=false`. With the flag on locally, 16 scorer and
+  recommendation tests ran the wrong scoring path and failed.
+
+### Added
+- **Deploys are gated on tests.** `deploy-to-production.yml` gets a `tests` job (PHP 8.3,
+  `composer test`), and `deploy` waits for it to pass. If the SSH deploy script fails partway,
+  it now always runs `php artisan up`, so a failure can't leave the site in maintenance mode.
+
+### Fixed
 - **Contacts hidden in public institution descriptions.** An institution's About text was the
   one public free-text field with no redaction, and one academy used it to pull teachers into
   its own WhatsApp group.
