@@ -5,6 +5,28 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **`php artisan business:report {--days=30}`** is a read-only founder report built only from
+  existing tables, with no new tracking. Its plain-text output is meant to be pasted into a
+  chat.
+  - It covers teacher activation: verified, matchable, CV, a profile score of 70+, applied.
+  - It covers institution activation: verified, posted a job.
+  - It covers jobs posted (managed or imported), managed jobs with no applications, and how
+    applications turn out.
+  - It covers engagement: views, shortlists, CV opens, invitations and placements.
+  - It ends with open demand against matchable teacher supply, broken down by city and by
+    subject.
+  - "Matchable" reuses `Teacher::rankable()`, so it agrees with what recommendations
+    show.
+  - Teacher subjects mix slugs and names, so both sides are slugged. The `all` subject is
+    left out because it means "any subject".
+  - Code: `BusinessReportService`, plus `BusinessReportTest`.
+
+### Fixed
+- **A password reset now logs out every existing session.** `updatePassword()` already
+  revoked other tokens, but `resetPassword()` didn't. So someone recovering a compromised
+  account through a reset left the attacker's never-expiring token still working.
+
 ### Fixed
 - **Blocking a user now logs them out everywhere.** Login was the only place that checked
   `is_blocked`, and Sanctum tokens never expire. So blocking someone in Filament hid their
