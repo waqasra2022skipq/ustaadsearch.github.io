@@ -70,3 +70,26 @@ npm run lint              # ESLint
 4. No premature abstractions. Three similar lines > a premature helper.
 5. Test at system boundaries. Trust framework internals.
 6. Track all feature changes in `/CHANGELOG.md`.
+
+## Repo Layout
+
+Three separate git repos: `ustaadsearch/` (backend), `ustaadsearch-frontend/` (frontend), and the root
+(tracks only top-level `*.md`). Commit inside the repo the change belongs to.
+
+## CHANGELOG.md
+
+It is very large. Never read it in full — read only the first ~60 lines to match the format, then insert
+the new entry at the top.
+
+## Hard Rules
+
+- Never modify production data or run anything against the production server without explicit approval.
+- Never edit an existing migration — add a new one.
+- Scheduled commands and queued jobs must be safe to re-run.
+- AI API calls (Gemini/Groq) must handle failures, timeouts and rate limits.
+- Authorization changes need a test.
+
+## Verification Before Done
+
+- Backend: `composer test` and `./vendor/bin/pint --dirty`
+- Frontend: `npm run lint` and `npx tsc --noEmit`
