@@ -5,6 +5,20 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Gender set on an admin-created tutor job is now saved.** The Filament form wrote
+  `gender_preference`, but the column is `preferred_gender`, so every admin-created job was
+  silently stored as "any gender". The form field is renamed and now defaults to "any" (it
+  defaulted to "female", which would have gone live as soon as the rename landed). Jobs already
+  created through admin still read "any" and need their gender set by hand.
+- **The tutor job admin view page reads real columns.** The infolist referenced `mode`,
+  `gender_preference`, `budget_min/max`, `parent.name`, `is_featured`/`is_urgent` and old status
+  values, none of which exist. It now shows `preferred_mode`, `preferred_gender`, `fee`/`fee_max`,
+  the institution, the real statuses, and flagged/views. `country` and `duration` are removed
+  from both the form and the infolist: there are no such columns, so input was silently dropped.
+- **Still missing from the admin form:** WhatsApp (`is_whatsapp`, DB default true) and area.
+- Code: `TutorJobForm`, `TutorJobInfolist`, `TutorJobResourceTest`.
+
 ### Added
 - **`php artisan business:report {--days=30}`** is a read-only founder report built only from
   existing tables, with no new tracking. Its plain-text output is meant to be pasted into a
