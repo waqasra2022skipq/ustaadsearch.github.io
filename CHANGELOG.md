@@ -5,6 +5,34 @@ Format: newest entries at the top.
 
 ---
 
+### Changed
+- **Admin job applications list shows who applied and what they sent.**
+  - Each row shows the applicant's email under their name and the institution under the job.
+  - New columns show status, phone, city, years of experience and whether a CV is attached.
+    Columns you can turn on also show the cover letter, placement outcome and last update.
+  - New filters cover status (pick several), job post, institution, CV attached and placement.
+  - Each row has a one-click CV button, and the sidebar badge counts pending applications.
+- **The application detail page is rebuilt.**
+  - It shows the applicant's contact details, experience, salary expectation, verification,
+    subjects and grades, and links to their teacher profile.
+  - It shows the job's institution, city, type, mode, salary range and applicant count, and
+    links to the job post.
+  - Screening answers now appear under their question text instead of raw `question_{id}`
+    keys.
+  - Status, applied and updated times, withdrawal and the teacher-reported placement are in a
+    sidebar, together with the institution's message to the applicant, private notes and tags.
+  - The header has buttons for Open CV, Teacher profile and Job post.
+
+### Fixed
+- **Application admin screens use the real statuses.** The list, the job post's Applications
+  tab and the teacher's Applications tab filtered and coloured by `reviewed`/`hired`. Those
+  statuses don't exist, so filtering by them always returned nothing. They now use
+  pending/reviewing/shortlisted/accepted/rejected/withdrawn, kept as `JobApplication::STATUSES`.
+  The `expected_salary` and `score` columns were removed because no such fields exist; they
+  were always blank.
+- Code: `JobApplicationResource`, `JobApplicationInfolist`, `JobApplicationsTable`,
+  `ViewJobApplication`, both `ApplicationsRelationManager`s, `JobApplicationResourceTest`.
+
 ### Fixed
 - **Gender set on an admin-created tutor job is now saved.** The Filament form wrote
   `gender_preference`, but the column is `preferred_gender`, so every admin-created job was
