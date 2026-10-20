@@ -6,6 +6,55 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **Imported Gulf jobs are saved correctly.**
+  - **Country:** "UAE", "U.A.E" and "Emirates" are saved as "United Arab Emirates", and "KSA"
+    as "Saudi Arabia". Qatar, Oman, Kuwait and Bahrain are covered too. Before, a job saved
+    as "UAE" didn't appear under the jobs country filter. The name is also normalised when a
+    job is created or edited outside the importer.
+  - **City overrides a defaulted Pakistan:** a job in Dubai, Riyadh, Doha and similar cities
+    is placed in its Gulf country even when the AI says Pakistan.
+  - **Currency:** a PKR salary on a Gulf job becomes the local currency (AED, SAR, …). Only
+    3-letter codes are accepted.
+  - **Phone:** a local number such as `050 123 4567` gets its country code (`+971…`), so the
+    WhatsApp link no longer dials Pakistan.
+  - **AI Job Import page:** new Currency and Country fields, so both can be corrected before
+    publishing.
+  - **Existing jobs:** `php artisan jobs:normalize-gulf --dry-run` lists the changes it would
+    make; without `--dry-run` it applies them. It is safe to re-run.
+- **AI imports no longer invent subjects.**
+  - All three extractors only keep subjects on the active subject list. Anything else is left
+    out with a warning ("Subject … is not on the subject list").
+  - A school job with no recognisable subject gets `general` instead of a slug made from its
+    title, which is how `primary-and-secondary-teacher` was created.
+  - The prompts are given the live subject list.
+  - New subjects: Quran and General (Class Teacher). Montessori and Early Years, which the
+    frontend already offered, are now in the subjects table too.
+  - Quran spellings (nazra, tajweed, hifz, tarjama-tul-quran) map to `quran`.
+  - `general` doesn't narrow teacher matching, just like `all`.
+  - `php artisan subjects:audit` lists existing job subjects that aren't on the list, and
+    which subject each would now map to. It is read-only.
+- **A shift can be "not specified".**
+  - `job_posts.shift` is now nullable.
+  - The AI no longer assumes "morning" for schools.
+  - The AI Job Import page and the admin job form have a "Not specified" option.
+  - Jobs created without a shift are no longer stored as "flexible".
+  - The job page hides the shift badge and leaves `workHours` out of the structured data when
+    there is no shift.
+
+### Added
+- **`areas:audit --jobs`** lists the most common school-job and tutor-job localities that
+  resolve to no area. Those are the neighbourhoods to add next (e.g. Zaitoon Colony, Canal
+  Gardens), followed by `areas:backfill --model=job_posts` and `--model=tutor_jobs`.
+- Code (backend): `CountryName`, `PhoneNumber::forCountry`, `Subject::activeSlugs`,
+  `Taxonomy`, the three extraction services, `JobPostService`, `AiJobImport` and its view,
+  `JobPostForm`/`JobPostsTable`/`JobPostInfolist`, `NormalizeGulfJobs`, `AuditJobSubjects`,
+  `AuditAreaCoverage`, `SubjectsAndGradesSeeder`; migrations
+  `2026_10_20_000001_add_quran_general_and_early_years_subjects` (only adds rows when the
+  subjects table is already seeded) and `2026_10_20_000002_make_shift_nullable_on_job_posts_table`.
+- Code (frontend): `src/config/taxonomy.ts`, `src/types/job.ts`, `src/app/jobs/[slug]/page.tsx`,
+  `formatJobMeta`, `JobCard`, `JobCreateForm`.
+
+### Fixed
 - **Two phone numbers in one post are no longer glued together.** AI job import stripped
   every non-digit, so "0321-4409344 / 0323-1489494" was saved as the 22-digit
   `0321440934403231489494`.
