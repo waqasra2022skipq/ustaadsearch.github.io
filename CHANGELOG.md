@@ -5,6 +5,38 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Admin bulk importer for tutor jobs.** A new "AI Tutor Job Import" page (admin → Jobs).
+  Before it, admin tutor jobs went through the public form one at a time.
+  - Paste a channel or group dump (about 15 posts at a time), and the AI splits it into one
+    editable row per job. You can post rows one at a time or all at once.
+  - Jobs are posted live under the admin's account. A tutor job with no user and no
+    institution counts as a guest post, and the guest checks would have flagged and hidden an
+    academy's second post of the day.
+  - Each job gets its area resolved and the standard 30-day expiry. Titles over 80 characters
+    are shortened at a word boundary.
+- **Where an imported job came from is stored.** New admin-only columns `source_name` (the
+  academy, group or channel) and `source_reference` (its own code, e.g. `TTA-2089`) on tutor
+  jobs and school jobs.
+  - Both AI extractors fill them, and both import pages let you edit them.
+  - They appear in the admin tables (as toggleable columns) and on the view pages.
+  - They are hidden from the public job API; the school job page returns the raw record.
+- **Possible-duplicate warnings on both import pages.** A row is marked when it looks like a
+  job posted in the last 30 days, or like an earlier row of the same paste. A match is:
+  - the same reference code, including a code inside an older job's description text; or
+  - the same contact phone, in any format, plus the same city plus a similar title.
+  - Warnings don't block posting.
+- Code: `AiTutorJobImport` and its view, `Concerns\ReviewsImportedJobs` (helpers shared with
+  `AiJobImport`), shared view partials for styles and duplicate notes, `DuplicateListing`,
+  `TutorJobService::createAdminImportedJob` / `findLikelyDuplicates`,
+  `JobPostService::findLikelyDuplicates`, both bulk extractors, the tutor job and job post
+  admin tables and infolists; migration
+  `2026_10_21_000001_add_source_fields_to_tutor_jobs_and_job_posts`; tests
+  `AiTutorJobImportTest`, `AiJobImportSourceTest`, `LikelyDuplicateJobsTest`,
+  `DuplicateListingTest`.
+- Institutions' own AI draft imports go through the same extractors, so their drafts record a
+  source too. The fields stay admin-only.
+
 ### Fixed
 - **Imported Gulf jobs are saved correctly.**
   - **Country:** "UAE", "U.A.E" and "Emirates" are saved as "United Arab Emirates", and "KSA"
