@@ -5,6 +5,14 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **PostHog product analytics on the frontend.** Pageviews, autocapture and sessions go to
+  PostHog (US cloud) alongside GA4 and Clarity. Signed-in users are identified by user id and
+  role only; name and email are not sent. Logging out resets to a fresh anonymous id.
+  PostHog loads only when `NEXT_PUBLIC_POSTHOG_KEY` is set.
+- Code: `src/instrumentation-client.ts`, `usePostHogIdentify`, `ClientLayoutWrapper`,
+  `.env.example`.
+
 ### Changed
 - **Admin job applications list shows who applied and what they sent.**
   - Each row shows the applicant's email under their name and the institution under the job.
