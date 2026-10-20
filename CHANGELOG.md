@@ -5,6 +5,37 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Two phone numbers in one post are no longer glued together.** AI job import stripped
+  every non-digit, so "0321-4409344 / 0323-1489494" was saved as the 22-digit
+  `0321440934403231489494`.
+  - All three extractors (school jobs, bulk tutor jobs, single tutor job) now keep the first
+    number as the contact phone. The others are added to the description as
+    "Other contact: …", with a warning on the row.
+  - The tutor job store requests and the admin AI Job Import page refuse a phone over 15
+    digits, with a message to put extra numbers in the description.
+  - Jobs already saved with a glued number, such as Oxford High, need fixing by hand in admin.
+- **Long AI-written tutor job titles no longer block "Post Job Now".** Titles over 80
+  characters failed validation. The extraction prompts now ask for at most 70 characters. Both
+  tutor job store requests and the bulk extractor shorten anything longer to 80 characters at
+  a word boundary.
+- **Small extraction failures recover by themselves.**
+  - A tutor job marked online with no city gets "Online", because the form requires a city.
+  - A failed extraction is retried once when it fails within 15 seconds (unreadable JSON, or
+    a provider that errors straight away). A slow failure isn't retried, so the request stays
+    within the web server's timeout.
+
+### Added
+- **Admin can approve a flagged tutor job.** Flagged guest posts are hidden from the board,
+  and admin had no way to clear the flag short of reposting. The tutor jobs table now has an
+  "Approve" row action, shown only on flagged rows, and an "Approve flagged" bulk action. Both
+  clear `is_flagged` and `flagged_reason`.
+- Code: `PhoneNumber::splitContacts`, `JobPostExtractionAIService`,
+  `TutorJobBulkExtractionAIService`, `TutorJobExtractionAIService`, `StoreTutorJobRequest`,
+  `StoreInstitutionTutorJobRequest`, `AiJobImport`, `TutorJobsTable`; tests in
+  `PhoneNumberTest`, the three extraction service tests, `TutorJobPostingTest` and
+  `TutorJobResourceTest`.
+
 ### Added
 - **Android app, iteration 1 (new `ustaadsearch-mobile/` repo).** Expo + React Native +
   TypeScript, built on the existing Laravel API with no backend changes.
