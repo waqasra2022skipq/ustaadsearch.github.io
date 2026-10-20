@@ -6,6 +6,16 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, iteration 1 (new `ustaadsearch-mobile/` repo).** Expo + React Native +
+  TypeScript, built on the existing Laravel API with no backend changes.
+  - Three screens: job list (pull to refresh, loads more as you scroll), job detail, and login.
+  - The login token is kept in encrypted device storage (SecureStore), and the session is
+    restored on launch through `/auth/me`.
+  - Logging out calls `/auth/logout`, so the token is revoked on the server too.
+  - "Apply" is a placeholder until the next iteration.
+- Run it with Expo Go on a phone; see `ustaadsearch-mobile/README.md`.
+
+### Added
 - **PostHog product analytics on the frontend.** Pageviews, autocapture and sessions go to
   PostHog (US cloud) alongside GA4 and Clarity. Signed-in users are identified by user id and
   role only; name and email are not sent. Logging out resets to a fresh anonymous id.
