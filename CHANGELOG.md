@@ -5,6 +5,41 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **A cut-off AI reply is reported as a failure, not as "nothing extracted".** Found pasting a
+  real 10-post Tutors Academy dump into the new tutor importer (20 Oct).
+  - When the reply stopped partway, the JSON parser fell back to the first complete inner
+    object — the contact block — which has no jobs, so the page said "No tutor job listings
+    were extracted".
+  - Both importers now require a `jobs` key (`parseJsonResponse(..., 'jobs')`). A cut-off
+    reply retries, falls back to the second provider, is logged with its length ("may have
+    been cut off") and shows "AI extraction failed".
+  - The tutor page now asks for 3 or 4 posts at a time (about 10 seconds a post). On the live
+    site, 4–6 posts worked every time; 10 posts worked once and failed once.
+- **Duplicate warnings match on place and grades, not on the AI's title.** The AI writes a new
+  title on every read, and one academy number covers hundreds of jobs, so "same phone + similar
+  title" missed real reposts (Soldier Bazar Grade 8, North Nazimabad AS Maths) and flagged
+  unrelated jobs (4K Chowrangi KG, PIB Colony English).
+  - Same phone and same city, and the grades must overlap. Then the addresses decide: they
+    need two shared words, and block/sector numbers or letters must agree (FB Area Block 10 is
+    not Block 13).
+  - A bare neighbourhood ("FB Area") or a shared resolved area is too coarse to decide, so
+    the titles do; a different area rules a match out. Titles also decide when either
+    listing has no place.
+  - Title comparison ignores words every tutor title has (female, home, all subjects, class,
+    grade, …).
+  - Reference-code matches are unchanged. School-job grades live in a pivot table and are not
+    compared; email-only school jobs still get no duplicate check.
+  - Re-tested on the live site with the same dump: all four real reposts flagged, no false
+    matches.
+- Code: `AiResponseParser::parseJsonResponse()` (optional required key), both bulk
+  extractors, `DuplicateListing` (`sameJob`, `samePlace`, `gradesOverlap`),
+  `TutorJobService` / `JobPostService::findLikelyDuplicates`,
+  `Concerns\ReviewsImportedJobs::markRepeatsWithinBatch`, the tutor import view; tests
+  `DuplicateListingTest`, `LikelyDuplicateJobsTest` (addresses from the 20 Oct listings),
+  `TutorJobBulkExtractionAIServiceTest`, `AiTutorJobImportTest`. Backend commits `1b5a884`,
+  `bce8c85`.
+
 ### Added
 - **Admin bulk importer for tutor jobs.** A new "AI Tutor Job Import" page (admin → Jobs).
   Before it, admin tutor jobs went through the public form one at a time.
