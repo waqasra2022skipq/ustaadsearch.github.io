@@ -6,6 +6,10 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **City and city-and-subject landing pages no longer return 500 errors.** The four
+  `/teaching-jobs/[city]` and `/tutors/[city]` routes now render dynamically because the root
+  layout reads the signed-in user's cookies. This avoids Next.js `DYNAMIC_SERVER_USAGE`
+  failures while keeping city and subject taxonomy calls cached for six hours.
 - **A cut-off AI reply is reported as a failure, not as "nothing extracted".** Found pasting a
   real 10-post Tutors Academy dump into the new tutor importer (20 Oct).
   - When the reply stopped partway, the JSON parser fell back to the first complete inner
