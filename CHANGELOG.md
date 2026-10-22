@@ -10,9 +10,17 @@ Format: newest entries at the top.
   default).** Logged-in users can make a one-time PKR contribution through a hosted checkout.
   The goal is to prove that payments can be taken and confirmed reliably before any feature is
   ever paid. Contributing changes nothing about an account.
-  - **Not live yet:** `PayFastClient` is a stub that throws until merchant onboarding provides
-    sandbox docs. Keep `PAYMENTS_ENABLED` (Laravel) and `NEXT_PUBLIC_PAYMENTS_ENABLED`
-    (Next.js) false until the client is implemented and tested against the sandbox.
+  - **Provider: Safepay.** `SafepayClient` is built from Safepay's published docs and tested
+    against faked responses; it has not yet been exercised against the real sandbox. The few
+    details the docs leave ambiguous are marked `VERIFY` in the client (the checkout `intent`,
+    the checkout URL parameter names, and which bytes the webhook signature covers). Keep
+    `PAYMENTS_ENABLED` (Laravel) and `NEXT_PUBLIC_PAYMENTS_ENABLED` (Next.js) false until one
+    sandbox payment has gone through end to end. `PayFastClient` remains an unimplemented stub;
+    `PAYMENTS_PROVIDER` picks which client is active.
+  - **Gateway interface:** `PaymentGateway`, extracted now that there are two providers. Callbacks
+    arrive at `POST /api/payments/webhooks/{provider}` (only the active provider's name is
+    accepted). The request only verifies and stores the event; checking it with the provider
+    runs on the queue (`ProcessPaymentEvent`) so the callback is acknowledged immediately.
   - **Tables:**
     - `payments`: one row per checkout. Integer paisa, a ULID `public_id`, and
       `unique(provider, provider_ref)`.
@@ -29,7 +37,7 @@ Format: newest entries at the top.
     - `POST /api/payments/support`
     - `GET /api/payments/{publicId}`
     - `GET /api/me/payments`
-    - `POST /api/payments/webhooks/payfast` (signature-authenticated, no Sanctum)
+    - `POST /api/payments/webhooks/{provider}` (signature-authenticated, no Sanctum)
   - **New command:** `payments:reconcile`, every 10 minutes. It checks pending payments that
     may have missed their callback and expires abandoned checkouts. It never expires a payment
     it couldn't check.
