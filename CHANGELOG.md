@@ -5,6 +5,23 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Android app, iteration 2: apply to a job from the app (`ustaadsearch-mobile/`).** No backend
+  changes; it uses `POST /jobs/{slug}/apply` and the viewer fields `GET /jobs/{slug}` already
+  returns.
+  - **Managed jobs:** a new Apply screen with an optional cover letter, the job's screening
+    questions (required ones checked on the phone first, and by the server) and an "Attach my
+    CV" switch shown only when the teacher has a CV. A successful application returns to the
+    job, which then shows "Applied · Pending" instead of the button.
+  - **External jobs** (284 of the 391 open jobs on the local copy): "Apply on WhatsApp" and
+    "Apply by email" open the phone's WhatsApp or mail app with the same pre-written message
+    as the website: job link, profile link, CV link, name.
+  - **Profile not ready:** the footer lists what is missing, from `apply_readiness`, and
+    "Complete your profile" opens the website's profile page. Profile editing in the app is a
+    later iteration.
+  - Logged-out and non-teacher viewers see "Log in to apply" and "Only teacher accounts can
+    apply".
+
 ### Fixed
 - **City and city-and-subject landing pages no longer return 500 errors.** The four
   `/teaching-jobs/[city]` and `/tutors/[city]` routes now render dynamically because the root
