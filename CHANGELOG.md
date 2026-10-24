@@ -5,6 +5,22 @@ Format: newest entries at the top.
 
 ---
 
+### Changed
+- **Android app, phase 1 of the full app: a design system, role-aware navigation and the real
+  logo (`ustaadsearch-mobile/`).** No backend changes.
+  - **Look and feel:** one theme (colours from the website, spacing, type) and shared components
+    (buttons, cards, status badges, fields, toasts) used by every screen. Lists show loading
+    skeletons, friendly empty states and an error with "Try again", and cache what they have so
+    reopening a screen is instant, with data refreshing quietly in the background.
+  - **Navigation follows the role,** like the website's mobile nav. Guests see Jobs, Tutor jobs
+    and Sign in. Teachers see Jobs, Tutor jobs, Applications and Profile. Schools see Home, My
+    jobs, Teachers and Account, which are placeholders pointing to the website until their tools
+    are built into the app.
+  - **Notifications:** a bell in the header with an unread count, and an inbox with "Mark all
+    read". Tapping a notification opens the screen it is about.
+  - **Branding:** the launcher icon, adaptive icon and splash screen use the UstaadSearch logo
+    instead of Expo's template. They appear after the next app build.
+
 ### Added
 - **Push notifications to the mobile app.** Every notification the website already sends as
   browser push (application status changes, school invitations, matching jobs, "did you get the
