@@ -6,6 +6,19 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, iteration 7: bottom tabs and tutor jobs (`ustaadsearch-mobile/`).** No backend
+  changes; it uses `GET /tutor-jobs` and `GET /tutor-jobs/{slug}`.
+  - The app now has four bottom tabs: Jobs, Tutor jobs, Applications and Profile. Log out is on
+    the Profile tab for teachers.
+  - **Tutor jobs:** a list with pull to refresh and paging (title, area and city, fee, mode,
+    subjects) and a detail screen with the schedule, preferred tutor, start date, subjects,
+    grades and description.
+  - **Contacting the poster** follows the website's rules, because the server decides what to
+    reveal: guests are asked to log in, a teacher whose profile isn't ready sees what is missing,
+    and a ready teacher gets "Apply on WhatsApp", "Apply by email" or "Call". The WhatsApp and
+    email text is the website's message (listing link, profile link, CV link, name).
+
+### Added
 - **Android app, iteration 6: upload your CV from the app (`ustaadsearch-mobile/`).**
   - The profile screen has a CV section: Upload CV (PDF, DOC or DOCX, up to 5MB), Replace CV and
     View CV. The file goes straight to S3, as on the website, and saving it fills in any empty
