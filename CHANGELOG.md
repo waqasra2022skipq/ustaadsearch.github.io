@@ -5,6 +5,19 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Android app, iteration 4: teacher sign-up (`ustaadsearch-mobile/`).** No backend changes; it
+  uses `POST /auth/register` and the website's city search, `GET /places`.
+  - A new "Create account" screen for teachers (schools still register on the website): name,
+    email, optional mobile number, city, gender and password. Signing up logs the teacher in and
+    returns them to where they came from, for example the job they were viewing.
+  - **City search** works like the website's picker: it searches listed Pakistani places as you
+    type, and a town that isn't listed can be used as typed, which the backend matches or files
+    for review.
+  - Reached from the login screen ("New teacher? Create an account").
+  - A new teacher has no subjects yet, so job screens show the profile gate until they complete
+    their profile on the website. Editing the profile in the app is the next iteration.
+
 ### Fixed
 - **Withdrawing an application now records when it happened.** `JobApplicationService::withdraw()`
   has always set `withdrawn_at`, but the column was missing from `JobApplication::$fillable`, so
