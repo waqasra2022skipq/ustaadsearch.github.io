@@ -6,6 +6,17 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, iteration 3: "My applications" (`ustaadsearch-mobile/`).** No backend changes; it
+  uses `GET /my-applications`, `DELETE /applications/{id}` and `POST /applications/{id}/placement`.
+  - A teacher sees every application with its status badge, the school's note and the applied
+    date, with pull to refresh and paging. Tapping one opens the job. It is reached from a new
+    "Applications" link on the job list.
+  - **Withdraw** is offered only while an application is pending, after a confirmation, from the
+    list and from the job screen. The application stays as "Withdrawn", as on the website.
+  - **"Did you get the job at {school}?"** is asked once for an accepted application
+    (Yes, I got it / No / Still waiting), the same signal the website collects.
+
+### Added
 - **Android app, iteration 2: apply to a job from the app (`ustaadsearch-mobile/`).** No backend
   changes; it uses `POST /jobs/{slug}/apply` and the viewer fields `GET /jobs/{slug}` already
   returns.
