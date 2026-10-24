@@ -6,6 +6,20 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, iteration 5: edit your teacher profile (`ustaadsearch-mobile/`).** No backend
+  changes; it uses `GET /me/teacher`, `PUT /me/teacher`, `GET /subjects` and `GET /grades`.
+  - A new "My profile" screen: subjects (grouped by category) and grade levels as tappable
+    chips, city with the same search as sign-up, how far you will travel, mobile number,
+    headline and about. A short checklist at the top shows what is still needed to apply.
+  - The job screen's "Complete your profile" now opens this screen instead of the website, so
+    a teacher who signs up in the app can finish their profile without leaving it. The CV is
+    still added on the website, so the gate links there when that is what is missing.
+  - The job list header gets "Profile" next to "Applications" for teachers, and Log out moves
+    to the bottom of the profile screen.
+  - Saving is one partial update: only what the form sends changes, and the city is sent only
+    if it was changed.
+
+### Added
 - **Android app, iteration 4: teacher sign-up (`ustaadsearch-mobile/`).** No backend changes; it
   uses `POST /auth/register` and the website's city search, `GET /places`.
   - A new "Create account" screen for teachers (schools still register on the website): name,
