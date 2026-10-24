@@ -6,6 +6,23 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Push notifications to the mobile app.** Every notification the website already sends as
+  browser push (application status changes, school invitations, matching jobs, "did you get the
+  job?" check-ins) now also goes to the teacher's phone when they use the app.
+  - **Backend:** new `device_push_tokens` table and `POST`/`DELETE /api/device-push-tokens`
+    (logged in, 30 per hour). A token moves to whoever last logged in on that phone. The shared
+    `SendsWebPush` trait adds a new `ExpoPushChannel`, which sends through Expo's push service
+    with a 10-second timeout. Failures are logged and never stop the notification itself, and
+    tokens Expo reports as unregistered (app uninstalled) are deleted.
+  - **App (`ustaadsearch-mobile/`, iteration 8):** teachers register the phone after login,
+    sign-up or app start, once notifications are allowed, and unregister on logout. Tapping a
+    notification opens the matching screen (My applications, a job or a tutor job). The app now
+    has its permanent Android package name, `com.ustaadsearch.app`, and EAS build profiles.
+  - **Needs, before it works on phones:** an Expo account and project, a Firebase project with
+    its FCM key uploaded to Expo, a development build (Expo Go can't receive push on Android),
+    and deploying the backend, which includes a new migration.
+
+### Added
 - **Android app, iteration 7: bottom tabs and tutor jobs (`ustaadsearch-mobile/`).** No backend
   changes; it uses `GET /tutor-jobs` and `GET /tutor-jobs/{slug}`.
   - The app now has four bottom tabs: Jobs, Tutor jobs, Applications and Profile. Log out is on
