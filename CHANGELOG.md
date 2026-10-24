@@ -6,6 +6,25 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, iteration 6: upload your CV from the app (`ustaadsearch-mobile/`).**
+  - The profile screen has a CV section: Upload CV (PDF, DOC or DOCX, up to 5MB), Replace CV and
+    View CV. The file goes straight to S3, as on the website, and saving it fills in any empty
+    profile fields from the CV. With that, a teacher can sign up, finish their profile and apply
+    entirely in the app.
+  - **New API endpoint `POST /api/me/teacher/cv/upload-url`** (teachers only, 20 per hour). It
+    returns a short-lived signed S3 upload link and the file's URL for `PATCH /me/teacher/cv`.
+    The website's upload route only works with a browser cookie, so token clients (the app) had no
+    way to upload. The file never passes through PHP, whose upload limit is smaller than a 5MB CV.
+    The app's upload only works against a server with this endpoint deployed.
+  - Saving subjects and grades from the profile screen only sends them when the teacher changed
+    them, so a CV fill-in that finishes in the background is never overwritten.
+
+### Changed
+- **Replacing a CV deletes the old file from S3 only in production.** Local and staging
+  databases are copies of production that share its bucket, so replacing a CV there used to
+  delete the real file. It is now skipped and logged outside production.
+
+### Added
 - **Android app, iteration 5: edit your teacher profile (`ustaadsearch-mobile/`).** No backend
   changes; it uses `GET /me/teacher`, `PUT /me/teacher`, `GET /subjects` and `GET /grades`.
   - A new "My profile" screen: subjects (grouped by category) and grade levels as tappable
