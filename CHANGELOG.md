@@ -5,6 +5,14 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Withdrawing an application now records when it happened.** `JobApplicationService::withdraw()`
+  has always set `withdrawn_at`, but the column was missing from `JobApplication::$fillable`, so
+  Eloquent silently dropped it and every withdrawal (website and app) was stored without a
+  timestamp. The founder report's "withdrawn" share, which counts `withdrawn_at`, was therefore
+  always 0, and Filament's "Withdrawn" field never appeared. Applications withdrawn before this
+  fix still have no timestamp.
+
 ### Added
 - **Android app, iteration 3: "My applications" (`ustaadsearch-mobile/`).** No backend changes; it
   uses `GET /my-applications`, `DELETE /applications/{id}` and `POST /applications/{id}/placement`.
