@@ -5,6 +5,25 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **The UstaadSearch Android app is available to download from the website (`/app`).** Teachers
+  apply for jobs, track applications and get notified when a school replies; schools post jobs
+  (or paste a WhatsApp ad and let AI draft it), review applicants and hire. It is built from the
+  same account and data as the website.
+  - **Download page:** `https://www.ustaadsearch.com/app` has the download button (version, size),
+    a QR code for desktop visitors, install steps (including Google Play Protect's "Install
+    anyway"), the file's SHA-256 so people can check it, and a short FAQ. There is an "Android App"
+    link in the footer, and the page is in the sitemap.
+  - **Android banner:** on Android phones the install banner now offers the app instead of the
+    web shortcut. Desktop and iPhone are unchanged.
+  - **Hosting:** the 55 MB APK is in the media bucket at `app/ustaadsearch.apk` (always the
+    latest) and `app/ustaadsearch-1.0.0.apk`. To release a new version, upload the new file there
+    and update `src/config/androidApp.ts` (version, size, SHA-256).
+  - **Updates:** small improvements reach installed apps automatically over the air; larger ones
+    need a new APK.
+  - **Size:** the app ships only the ARM libraries phones use, which halves the download
+    (105 MB to 55 MB).
+
 ### Fixed
 - **The school dashboard in the Android app counted only teaching jobs.** A school that mostly
   posts tutor jobs saw "0 open jobs" and "You haven't posted a job yet" beside a full list of
