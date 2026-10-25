@@ -6,6 +6,14 @@ Format: newest entries at the top.
 ---
 
 ### Fixed
+- **The school dashboard in the Android app counted only teaching jobs.** A school that mostly
+  posts tutor jobs saw "0 open jobs" and "You haven't posted a job yet" beside a full list of
+  tutor jobs. Home now shows open teaching jobs and open tutor jobs separately, plus a "Your
+  tutor jobs" section whose "See all" opens My jobs on the tutor tab. The institution stats API
+  (`GET /api/me/institution/stats`) gained `active_tutor_jobs` and `total_tutor_jobs` beside the
+  existing keys; nothing else changed, so the website's dashboard is unaffected.
+
+### Fixed
 - **Android app: the keyboard no longer covers form fields.** On newer Android versions the
   keyboard doesn't resize the screen, so fields near the bottom of a form (the year in
   education, a school's mobile number, years of experience) were hidden while typing. Forms now
