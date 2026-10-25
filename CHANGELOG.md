@@ -5,6 +5,13 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Android app: the keyboard no longer covers form fields.** On newer Android versions the
+  keyboard doesn't resize the screen, so fields near the bottom of a form (the year in
+  education, a school's mobile number, years of experience) were hidden while typing. Forms now
+  lift above the keyboard, a field scrolls itself into view when tapped, the filter sheet avoids
+  the keyboard, and the bottom tab bar hides while typing.
+
 ### Added
 - **Android app, phase 4: schools can post jobs and find teachers in the app
   (`ustaadsearch-mobile/`).** No backend changes.
