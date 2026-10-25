@@ -6,6 +6,25 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, phase 3: schools and academies can hire from the app (`ustaadsearch-mobile/`).**
+  No backend changes.
+  - **Sign-up:** "I'm a teacher / I'm a school or academy". A school gets its institution profile
+    straight away, as on the website.
+  - **Hiring dashboard (Home):** open jobs, applicants this week, applicants awaiting review,
+    total applicants, and recent jobs.
+  - **My jobs:** teaching jobs (with applicant counts) and tutor jobs. Each job has a manage
+    screen: mark filled, reopen, close (confirmed; a closed job can't be reopened), renew an
+    expired job, and view the public listing.
+  - **Applicants:** filter chips with a count per status. Each applicant shows profile, CV,
+    cover letter, screening answers, education and experience, and WhatsApp, call and email
+    buttons. The school can change the status with an optional message to the teacher (and
+    choose whether to notify them), and keep private notes the teacher never sees.
+  - **Push for schools:** school phones register for notifications too, and "New Application"
+    opens that job's applicants.
+  - Posting and editing jobs, finding teachers and the school profile still open the website.
+    They are the next phase.
+
+### Added
 - **Android app, phase 2: teachers can do everything they can on the website
   (`ustaadsearch-mobile/`).** No backend changes.
   - **Home dashboard:** what's still missing before you can apply, with one tap to fix it; a
