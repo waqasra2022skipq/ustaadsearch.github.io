@@ -6,6 +6,23 @@ Format: newest entries at the top.
 ---
 
 ### Added
+- **Android app, phase 4: schools can post jobs and find teachers in the app
+  (`ustaadsearch-mobile/`).** No backend changes.
+  - **Post a job:** paste a job ad from WhatsApp, Facebook or a newspaper and the website's AI
+    turns it into a draft teaching job or tutor job to review and publish. Or fill the form: the
+    new in-app forms cover everything the website asks for (including the campus locality for
+    on-site jobs and screening questions), and the same forms edit an existing job.
+  - **Recommended teachers:** for each job, ranked teachers with why they match. "Invite on
+    WhatsApp" or by email records the invitation, so the teacher is notified once in the app, and
+    opens a ready-written message. The list shows who was invited, viewed or applied.
+  - **Teachers tab:** a directory with a plain-language search, filters (city, subject, gender,
+    sort) and teacher profiles with experience, education, CV (signed-in schools) and reviews.
+    Schools can save teachers to a talent pool and find them under "Saved".
+  - **School profile:** edit what teachers see before they apply: type, city, description,
+    phone, website, curriculum and benefits.
+  - Guests can browse the Teachers tab too; contact details stay hidden until sign-in.
+
+### Added
 - **Android app, phase 3: schools and academies can hire from the app (`ustaadsearch-mobile/`).**
   No backend changes.
   - **Sign-up:** "I'm a teacher / I'm a school or academy". A school gets its institution profile
