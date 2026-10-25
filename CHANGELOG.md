@@ -5,6 +5,24 @@ Format: newest entries at the top.
 
 ---
 
+### Added
+- **Android app, phase 2: teachers can do everything they can on the website
+  (`ustaadsearch-mobile/`).** No backend changes.
+  - **Home dashboard:** what's still missing before you can apply, with one tap to fix it; a
+    reminder to verify your email with "Resend"; application counts; recent applications; and
+    tutor jobs recommended for you (`/me/teacher/recommended-jobs`).
+  - **Jobs:** school and tutor jobs in one tab with a switch. A search bar takes a plain sentence
+    ("maths teacher in Lahore") and uses the website's AI search. Filters cover city, subject,
+    mode and sort, and active filters show as chips you can remove.
+  - **Profile:** education and experience (add, edit, delete); teaching mode, years of
+    experience and expected salary; "Open to school jobs" and "Open to tutoring" switches; and the
+    full readiness checklist, including the CV / headline-about-entry rule.
+  - **Account:** change email (with re-verification) and password, delete account, privacy,
+    terms and contact links, and "Forgot your password?" on the sign-in screen (the reset link
+    opens the website).
+  - The tutor-jobs tab is merged into Jobs, so teachers now have Home, Jobs, Applications and
+    Profile.
+
 ### Changed
 - **Android app, phase 1 of the full app: a design system, role-aware navigation and the real
   logo (`ustaadsearch-mobile/`).** No backend changes.
