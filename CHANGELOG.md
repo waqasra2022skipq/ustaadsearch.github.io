@@ -5,6 +5,17 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Tutor jobs posted from the admin panel showed only "Call", never "Apply on WhatsApp".** Neither
+  the AI Tutor Job Import nor the tutor job create/edit form had a way to say a phone is on
+  WhatsApp, so the importer saved whatever the AI guessed (often "no") and the apply button fell
+  back to Call on the website and in the Android app.
+  - **AI Tutor Job Import:** each row has a "Phone is on WhatsApp" checkbox. It starts ticked for
+    Pakistani mobile numbers whatever the AI guessed; untick it for a landline.
+  - **Tutor job form (create and edit):** a "Phone is on WhatsApp" toggle, on by default.
+  - **Tutor job list and detail page:** a WhatsApp column (hidden by default) and a flag.
+  - **Existing jobs** are not changed; open them and tick the box, or ask for a one-off fix.
+
 ### Added
 - **The UstaadSearch Android app is available to download from the website (`/app`).** Teachers
   apply for jobs, track applications and get notified when a school replies; schools post jobs
