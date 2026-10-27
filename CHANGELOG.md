@@ -5,6 +5,17 @@ Format: newest entries at the top.
 
 ---
 
+### Fixed
+- **Tutor jobs posted from the AI importer no longer save with WhatsApp switched off.** When a
+  pasted ad did not say "WhatsApp", the AI marked the shared contact as not on WhatsApp and every
+  job in the paste inherited that, so about 70 posted jobs had to be corrected by hand. Imported
+  jobs now default to "on WhatsApp"; untick the row's checkbox when a number really is not.
+  (`TutorJobBulkExtractionAIService::normalizeJob`, with tests.)
+- **Duplicate warnings on the import pages no longer match two different jobs in the same
+  neighbourhood.** A bare neighbourhood or shared area ("FB Area", "Clifton") no longer counts as
+  the same place; the titles decide. Longer addresses still need two shared words, and block or
+  sector numbers that disagree always mean a different job.
+
 ### Added
 - **The UstaadSearch Android app is available to download from the website (`/app`).** Teachers
   apply for jobs, track applications and get notified when a school replies; schools post jobs
